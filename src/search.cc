@@ -68,43 +68,56 @@ Handle<Value> Search(const Arguments& args) {
 		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
 	}
 	
-	Handle<Value> m1R = m1Data->Get(r);
-	Handle<Value> m1G = m1Data->Get(g);
-	Handle<Value> m1B = m1Data->Get(b);
+	Handle<Object> m1R = Handle<Object>::Cast(m1Data->Get(r));
+	Handle<Object> m1G = Handle<Object>::Cast(m1Data->Get(g));
+	Handle<Object> m1B = Handle<Object>::Cast(m1Data->Get(b));
 	
-	Handle<Value> m2R = m2Data->Get(r);
-	Handle<Value> m2G = m2Data->Get(g);
-	Handle<Value> m2B = m2Data->Get(b);
+	Handle<Object> m2R = Handle<Object>::Cast(m2Data->Get(r));
+	Handle<Object> m2G = Handle<Object>::Cast(m2Data->Get(g));
+	Handle<Object> m2B = Handle<Object>::Cast(m2Data->Get(b));
 	
-	size_t m1RL = node::Buffer::Length(m1R->ToObject());
-	char* m1RD = node::Buffer::Data(m1R->ToObject());
-	int* m1RDi = (int*) &m1RD[0];
-	
-	size_t m1GL = node::Buffer::Length(m1G->ToObject());
-	char* m1GD = node::Buffer::Data(m1G->ToObject());
-	int* m1GDi = (int*) &m1GD[0];
-	
-	size_t m1BL = node::Buffer::Length(m1B->ToObject());
-	char* m1BD = node::Buffer::Data(m1B->ToObject());
-	int* m1BDi = (int*) &m1BD[0];
-	
-	size_t m2RL = node::Buffer::Length(m2R->ToObject());
-	char* m2RD = node::Buffer::Data(m2R->ToObject());
-	int* m2RDi = (int*) &m2RD[0];
-	
-	size_t m2GL = node::Buffer::Length(m2G->ToObject());
-	char* m2GD = node::Buffer::Data(m2G->ToObject());
-	int* m2GDi = (int*) &m2GD[0];
-	
-	size_t m2BL = node::Buffer::Length(m2B->ToObject());
-	char* m2BD = node::Buffer::Data(m2B->ToObject());
-	int* m2BDi = (int*) &m2BD[0];
-	
-	if (m1RL != m1GL || m1RL != m1BL) {
+	// TODO: since nodejs v0.11 check if data is actual Int32Array instance
+	if (strcmp(*String::AsciiValue(m1R->GetConstructorName()), "Int32Array") != 0 ||
+		strcmp(*String::AsciiValue(m1G->GetConstructorName()), "Int32Array") != 0 ||
+		strcmp(*String::AsciiValue(m1B->GetConstructorName()), "Int32Array") != 0) {
 		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
 	}
 	
-	if (m2RL != m2GL || m2RL != m2BL) {
+	if (strcmp(*String::AsciiValue(m2R->GetConstructorName()), "Int32Array") != 0 ||
+		strcmp(*String::AsciiValue(m2G->GetConstructorName()), "Int32Array") != 0 ||
+		strcmp(*String::AsciiValue(m2B->GetConstructorName()), "Int32Array") != 0) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+	}
+	
+	size_t m1RL = node::Buffer::Length(m1R);
+	char* m1RD = node::Buffer::Data(m1R);
+	int* m1RDi = (int*) &m1RD[0];
+	
+	size_t m1GL = node::Buffer::Length(m1G);
+	char* m1GD = node::Buffer::Data(m1G);
+	int* m1GDi = (int*) &m1GD[0];
+	
+	size_t m1BL = node::Buffer::Length(m1B);
+	char* m1BD = node::Buffer::Data(m1B);
+	int* m1BDi = (int*) &m1BD[0];
+	
+	size_t m2RL = node::Buffer::Length(m2R);
+	char* m2RD = node::Buffer::Data(m2R);
+	int* m2RDi = (int*) &m2RD[0];
+	
+	size_t m2GL = node::Buffer::Length(m2G);
+	char* m2GD = node::Buffer::Data(m2G);
+	int* m2GDi = (int*) &m2GD[0];
+	
+	size_t m2BL = node::Buffer::Length(m2B);
+	char* m2BD = node::Buffer::Data(m2B);
+	int* m2BDi = (int*) &m2BD[0];
+	
+	if (m1RL != m1GL || m1RL != m1BL || m1RL != m1Rows * m1Cols) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+	}
+	
+	if (m2RL != m2GL || m2RL != m2BL || m2RL != m2Rows * m2Cols) {
 		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
 	}
 	
