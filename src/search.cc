@@ -149,13 +149,16 @@ Handle<Value> Search(const Arguments& args) {
 	Local<Array> out = Array::New((int) result.size());
 	Local<Object> match;
 	
+	Local<String> row = String::New("row");
+	Local<String> col = String::New("col");
+	Local<String> accuracy = String::New("accuracy");
+	
 	int i = 0;
 	for (std::vector<Match>::iterator it = result.begin(); it != result.end(); it++) {
-		
 		match = Object::New();
-		match->Set(String::New("row"), Number::New(it->row));
-		match->Set(String::New("col"), Number::New(it->col));
-		match->Set(String::New("accuracy"), Number::New(it->accuracy));
+		match->Set(row, Number::New(it->row));
+		match->Set(col, Number::New(it->col));
+		match->Set(accuracy, Number::New(it->accuracy));
 		
 		out->Set(i++, match);
 	}
