@@ -1,5 +1,5 @@
 {
 	"name": "imagesearch",
-  	"version": "0.1.0",
-  	"main": "./lib/imagesearch"
+	"version": "0.1.0",
+	"main": "./lib/imagesearch"
 }
