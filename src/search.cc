@@ -29,47 +29,84 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 Handle<Value> Search(const Arguments& args) {
 	HandleScope scope;
 	
-	Handle<Object> matrix1 = Handle<Object>::Cast(args[0]);
-	Handle<Object> matrix2 = Handle<Object>::Cast(args[1]);
-	
 	const unsigned int colorTolerance = args[2]->IsNumber() ? args[2]->Int32Value() : 0;
 	const unsigned int pixelTolerance = args[3]->IsNumber() ? args[3]->Int32Value() : 0;
 	
-	const unsigned int m1Rows = matrix1->Get(String::New("rows"))->Int32Value();
-	const unsigned int m1Cols = matrix1->Get(String::New("cols"))->Int32Value();
+	Handle<Object> matrix1 = Handle<Object>::Cast(args[0]);
+	Handle<Object> matrix2 = Handle<Object>::Cast(args[1]);
 	
-	const unsigned int m2Rows = matrix2->Get(String::New("rows"))->Int32Value();
-	const unsigned int m2Cols = matrix2->Get(String::New("cols"))->Int32Value();
+	Local<String> rows = String::New("rows");
+	Local<String> cols = String::New("cols");
+	Local<String> data = String::New("data");
 	
-	Handle<Object> m1Data = Handle<Object>::Cast(matrix1->Get(String::New("data")));
-	Handle<Object> m2Data = Handle<Object>::Cast(matrix2->Get(String::New("data")));
+	if ( ! matrix1->Has(rows) || ! matrix1->Has(cols) || ! matrix1->Has(data)) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
+	}
 	
-	Handle<Value> m1R = m1Data->Get(String::New("r"));
-	Handle<Value> m1G = m1Data->Get(String::New("g"));
-	Handle<Value> m1B = m1Data->Get(String::New("b"));
+	if ( ! matrix2->Has(rows) || ! matrix2->Has(cols) || ! matrix2->Has(data)) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
+	}
 	
-	Handle<Value> m2R = m2Data->Get(String::New("r"));
-	Handle<Value> m2G = m2Data->Get(String::New("g"));
-	Handle<Value> m2B = m2Data->Get(String::New("b"));
+	const unsigned int m1Rows = matrix1->Get(rows)->Int32Value();
+	const unsigned int m1Cols = matrix1->Get(cols)->Int32Value();
 	
+	const unsigned int m2Rows = matrix2->Get(rows)->Int32Value();
+	const unsigned int m2Cols = matrix2->Get(cols)->Int32Value();
 	
+	Handle<Object> m1Data = Handle<Object>::Cast(matrix1->Get(data));
+	Handle<Object> m2Data = Handle<Object>::Cast(matrix2->Get(data));
+	
+	Local<String> r = String::New("r");
+	Local<String> g = String::New("g");
+	Local<String> b = String::New("b");
+	
+	if ( ! m1Data->Has(r) || ! m1Data->Has(g) || ! m1Data->Has(b)) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
+	}
+	
+	if ( ! m2Data->Has(r) || ! m2Data->Has(g) || ! m2Data->Has(b)) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
+	}
+	
+	Handle<Value> m1R = m1Data->Get(r);
+	Handle<Value> m1G = m1Data->Get(g);
+	Handle<Value> m1B = m1Data->Get(b);
+	
+	Handle<Value> m2R = m2Data->Get(r);
+	Handle<Value> m2G = m2Data->Get(g);
+	Handle<Value> m2B = m2Data->Get(b);
+	
+	size_t m1RL = node::Buffer::Length(m1R->ToObject());
 	char* m1RD = node::Buffer::Data(m1R->ToObject());
 	int* m1RDi = (int*) &m1RD[0];
 	
+	size_t m1GL = node::Buffer::Length(m1G->ToObject());
 	char* m1GD = node::Buffer::Data(m1G->ToObject());
 	int* m1GDi = (int*) &m1GD[0];
 	
+	size_t m1BL = node::Buffer::Length(m1B->ToObject());
 	char* m1BD = node::Buffer::Data(m1B->ToObject());
 	int* m1BDi = (int*) &m1BD[0];
 	
+	size_t m2RL = node::Buffer::Length(m2R->ToObject());
 	char* m2RD = node::Buffer::Data(m2R->ToObject());
 	int* m2RDi = (int*) &m2RD[0];
 	
+	size_t m2GL = node::Buffer::Length(m2G->ToObject());
 	char* m2GD = node::Buffer::Data(m2G->ToObject());
 	int* m2GDi = (int*) &m2GD[0];
 	
+	size_t m2BL = node::Buffer::Length(m2B->ToObject());
 	char* m2BD = node::Buffer::Data(m2B->ToObject());
 	int* m2BDi = (int*) &m2BD[0];
+	
+	if (m1RL != m1GL || m1RL != m1BL) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+	}
+	
+	if (m2RL != m2GL || m2RL != m2BL) {
+		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+	}
 	
 	MatrixChannel m1RMat(m1RDi, m1Rows, m1Cols);
 	MatrixChannel m1GMat(m1GDi, m1Rows, m1Cols);
