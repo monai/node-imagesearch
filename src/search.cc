@@ -25,6 +25,7 @@ typedef struct {
 } Match;
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance);
+Eigen::RowVectorXd stdDev(const MatrixChannel &m);
 
 Handle<Value> Search(const Arguments& args) {
 	HandleScope scope;
@@ -168,7 +169,10 @@ Handle<Value> Search(const Arguments& args) {
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
 	
-	const unsigned int dx = (const unsigned int) std::floor(m2.cols / 2);
+	Eigen::RowVectorXd dev = stdDev(m2.r) + stdDev(m2.g) + stdDev(m2.b);
+	Eigen::RowVectorXd::Index maxCol;
+	dev.maxCoeff(&maxCol);
+	const unsigned int dx = (const unsigned int) maxCol;
 	
 	Eigen::VectorXi stubR = m2.r.block(0, dx, m2.rows, 1);
 	Eigen::VectorXi stubG = m2.g.block(0, dx, m2.rows, 1);
@@ -225,6 +229,12 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 	} while (++r <= mr);
 	
 	return out;
+}
+
+Eigen::RowVectorXd stdDev(const MatrixChannel &m) {
+	const unsigned int N = m.rows();
+	Eigen::MatrixXd md = m.cast<double>();
+	return ((md.rowwise() - (md.colwise().sum() / N)).array().square().colwise().sum() / N).array().sqrt();
 }
 
 void Init(Handle<Object> exports) {
