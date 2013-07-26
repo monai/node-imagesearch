@@ -9,7 +9,7 @@
 
 using namespace v8;
 
-typedef Eigen::Map<Eigen::Matrix<int, -1, -1, Eigen::RowMajor> > MatrixChannel;
+typedef Eigen::Map<Eigen::Matrix<float, -1, -1, Eigen::RowMajor> > MatrixChannel;
 typedef struct {
 	unsigned int rows;
 	unsigned int cols;
@@ -25,7 +25,7 @@ typedef struct {
 } Match;
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance);
-Eigen::RowVectorXd stdDev(const MatrixChannel &m);
+Eigen::RowVectorXf stdDev(const MatrixChannel &m);
 
 Handle<Value> Search(const Arguments& args) {
 	HandleScope scope;
@@ -77,42 +77,42 @@ Handle<Value> Search(const Arguments& args) {
 	Handle<Object> m2G = Handle<Object>::Cast(m2Data->Get(g));
 	Handle<Object> m2B = Handle<Object>::Cast(m2Data->Get(b));
 	
-	// TODO: since nodejs v0.11 check if data is actual Int32Array instance
-	if (strcmp(*String::AsciiValue(m1R->GetConstructorName()), "Int32Array") != 0 ||
-		strcmp(*String::AsciiValue(m1G->GetConstructorName()), "Int32Array") != 0 ||
-		strcmp(*String::AsciiValue(m1B->GetConstructorName()), "Int32Array") != 0) {
+	// TODO: since nodejs v0.11 check if data is actual typed array instance
+	if (strcmp(*String::AsciiValue(m1R->GetConstructorName()), "Float32Array") != 0 ||
+		strcmp(*String::AsciiValue(m1G->GetConstructorName()), "Float32Array") != 0 ||
+		strcmp(*String::AsciiValue(m1B->GetConstructorName()), "Float32Array") != 0) {
 		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
 	}
 	
-	if (strcmp(*String::AsciiValue(m2R->GetConstructorName()), "Int32Array") != 0 ||
-		strcmp(*String::AsciiValue(m2G->GetConstructorName()), "Int32Array") != 0 ||
-		strcmp(*String::AsciiValue(m2B->GetConstructorName()), "Int32Array") != 0) {
+	if (strcmp(*String::AsciiValue(m2R->GetConstructorName()), "Float32Array") != 0 ||
+		strcmp(*String::AsciiValue(m2G->GetConstructorName()), "Float32Array") != 0 ||
+		strcmp(*String::AsciiValue(m2B->GetConstructorName()), "Float32Array") != 0) {
 		return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
 	}
 	
 	size_t m1RL = node::Buffer::Length(m1R);
 	char* m1RD = node::Buffer::Data(m1R);
-	int* m1RDi = (int*) &m1RD[0];
+	float* m1RDi = (float*) &m1RD[0];
 	
 	size_t m1GL = node::Buffer::Length(m1G);
 	char* m1GD = node::Buffer::Data(m1G);
-	int* m1GDi = (int*) &m1GD[0];
+	float* m1GDi = (float*) &m1GD[0];
 	
 	size_t m1BL = node::Buffer::Length(m1B);
 	char* m1BD = node::Buffer::Data(m1B);
-	int* m1BDi = (int*) &m1BD[0];
+	float* m1BDi = (float*) &m1BD[0];
 	
 	size_t m2RL = node::Buffer::Length(m2R);
 	char* m2RD = node::Buffer::Data(m2R);
-	int* m2RDi = (int*) &m2RD[0];
+	float* m2RDi = (float*) &m2RD[0];
 	
 	size_t m2GL = node::Buffer::Length(m2G);
 	char* m2GD = node::Buffer::Data(m2G);
-	int* m2GDi = (int*) &m2GD[0];
+	float* m2GDi = (float*) &m2GD[0];
 	
 	size_t m2BL = node::Buffer::Length(m2B);
 	char* m2BD = node::Buffer::Data(m2B);
-	int* m2BDi = (int*) &m2BD[0];
+	float* m2BDi = (float*) &m2BD[0];
 	
 	if (m1RL != m1GL || m1RL != m1BL || m1RL != m1Rows * m1Cols) {
 		return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
@@ -169,17 +169,17 @@ Handle<Value> Search(const Arguments& args) {
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
 	
-	Eigen::RowVectorXd devR = stdDev(m2.r);
-	Eigen::RowVectorXd devG = stdDev(m2.g);
-	Eigen::RowVectorXd devB = stdDev(m2.b);
-	Eigen::RowVectorXd dev = devR + devG + devB;
+	Eigen::RowVectorXf devR = stdDev(m2.r);
+	Eigen::RowVectorXf devG = stdDev(m2.g);
+	Eigen::RowVectorXf devB = stdDev(m2.b);
+	Eigen::RowVectorXf dev = devR + devG + devB;
 	
-	Eigen::RowVectorXd::Index maxCol;
+	Eigen::RowVectorXf::Index maxCol;
 	dev.maxCoeff(&maxCol);
 	const unsigned int dx = (const unsigned int) maxCol;
 	
-	int* dataM1;
-	int* dataM2;
+	float* dataM1;
+	float* dataM2;
 	
 	if (devR.sum() > devG.sum()) {
 		dataM1 = &m1.r(0);
@@ -195,10 +195,9 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 	MatrixChannel stubM1(dataM1, m1.rows, m1.cols);
 	MatrixChannel stubM2(dataM2, m2.rows, m2.cols);
 	
-	Eigen::VectorXi stub = stubM2.block(0, dx, m2.rows, 1);
-	Eigen::ArrayXi stubDiff;
-	Eigen::ArrayXXi matDiff;
-	Eigen::MatrixXd matAcc;
+	Eigen::VectorXf stub = stubM2.block(0, dx, m2.rows, 1);
+	Eigen::ArrayXf stubDiff;
+	Eigen::ArrayXXf matDiff;
 	
 	unsigned int r = 0;
 	unsigned int c = dx;
@@ -206,7 +205,7 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 	const unsigned int mc = m1.cols - m2.cols + c;
 	
 	unsigned int pixelMiss = 0;
-	double accuracy = 0;
+	float accuracy = 0;
 	
 	std::vector<Match> out;
 	
@@ -223,9 +222,8 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 			pixelMiss = (unsigned int) (matDiff > colorTolerance).count();
 			if (pixelMiss <= pixelTolerance) {
 				
-				matAcc = matDiff.cast<double>();
-				accuracy = matAcc.maxCoeff();
-				accuracy = (accuracy > 0) ? (matAcc / accuracy).sum() : 0;
+				accuracy = matDiff.maxCoeff();
+				accuracy = (accuracy > 0) ? (matDiff / accuracy).sum() : 0;
 				
 				Match res = {
 					r,
@@ -241,10 +239,9 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 	return out;
 }
 
-Eigen::RowVectorXd stdDev(const MatrixChannel &m) {
+Eigen::RowVectorXf stdDev(const MatrixChannel &m) {
 	const unsigned int N = m.rows();
-	Eigen::MatrixXd md = m.cast<double>();
-	return ((md.rowwise() - (md.colwise().sum() / N)).array().square().colwise().sum() / N).array().sqrt();
+	return ((m.rowwise() - (m.colwise().sum() / N)).array().square().colwise().sum() / N).array().sqrt();
 }
 
 void Init(Handle<Object> exports) {
