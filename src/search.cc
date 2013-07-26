@@ -169,15 +169,33 @@ Handle<Value> Search(const Arguments& args) {
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
 	
-	Eigen::RowVectorXd dev = stdDev(m2.r) + stdDev(m2.g) + stdDev(m2.b);
+	Eigen::RowVectorXd devR = stdDev(m2.r);
+	Eigen::RowVectorXd devG = stdDev(m2.g);
+	Eigen::RowVectorXd devB = stdDev(m2.b);
+	Eigen::RowVectorXd dev = devR + devG + devB;
+	
 	Eigen::RowVectorXd::Index maxCol;
 	dev.maxCoeff(&maxCol);
 	const unsigned int dx = (const unsigned int) maxCol;
 	
-	Eigen::VectorXi stubR = m2.r.block(0, dx, m2.rows, 1);
-	Eigen::VectorXi stubG = m2.g.block(0, dx, m2.rows, 1);
-	Eigen::VectorXi stubB = m2.b.block(0, dx, m2.rows, 1);
+	int* dataM1;
+	int* dataM2;
 	
+	if (devR.sum() > devG.sum()) {
+		dataM1 = &m1.r(0);
+		dataM2 = &m2.r(0);
+	} else if (devG.sum() > devB.sum()) {
+		dataM1 = &m1.g(0);
+		dataM2 = &m2.g(0);
+	} else {
+		dataM1 = &m1.b(0);
+		dataM2 = &m2.b(0);
+	}
+	
+	MatrixChannel stubM1(dataM1, m1.rows, m1.cols);
+	MatrixChannel stubM2(dataM2, m2.rows, m2.cols);
+	
+	Eigen::VectorXi stub = stubM2.block(0, dx, m2.rows, 1);
 	Eigen::ArrayXi stubDiff;
 	Eigen::ArrayXXi matDiff;
 	Eigen::MatrixXd matAcc;
@@ -194,16 +212,8 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 	
 	do {
 		do {
-			stubDiff   = (m1.r.block(r, c, m2.rows, 1) - stubR).array().abs();
-			pixelMiss  = (unsigned int) (stubDiff > colorTolerance).count();
-			if (pixelMiss > pixelTolerance) continue;
-			
-			stubDiff  += (m1.g.block(r, c, m2.rows, 1) - stubG).array().abs();
-			pixelMiss += (unsigned int) (stubDiff > colorTolerance).count();
-			if (pixelMiss > pixelTolerance) continue;
-			
-			stubDiff  += (m1.b.block(r, c, m2.rows, 1) - stubB).array().abs();
-			pixelMiss += (unsigned int) (stubDiff > colorTolerance).count();
+			stubDiff = (stubM1.block(r, c, m2.rows, 1) - stub).array().abs();
+			pixelMiss = (unsigned int) (stubDiff > colorTolerance).count();
 			if (pixelMiss > pixelTolerance) continue;
 			
 			matDiff  = (m1.r.block(r, c - dx, m2.rows, m2.cols) - m2.r).array().abs();
