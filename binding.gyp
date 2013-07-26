@@ -4,6 +4,6 @@
 		"sources": [ "src/search.cc" ],
 		"include_dirs": [
 			"deps/eigen"
-		],
+		]
 	}]
 }
