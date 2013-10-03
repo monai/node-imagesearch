@@ -168,159 +168,76 @@ Handle<Value> Search(const Arguments& args) {
 }
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
-	unsigned int m1rows = m1.rows;
-	unsigned int m1cols = m1.cols;
-	unsigned int m2rows = m2.rows;
-	unsigned int m2cols = m2.cols;
 	
-	unsigned int nr = (m1rows - m1rows % m2rows) / m2rows;
-	unsigned int nc = (m1cols - m1cols % m2cols) / m2cols;
+	Eigen::RowVectorXf devR = stdDev(m2.r);
+	Eigen::RowVectorXf devG = stdDev(m2.g);
+	Eigen::RowVectorXf devB = stdDev(m2.b);
+	Eigen::RowVectorXf dev = devR + devG + devB;
 	
-	Eigen::MatrixXf stubR;
-	Eigen::MatrixXf stubG;
-	Eigen::MatrixXf stubB;
-	Eigen::ArrayXXf stubDiffR;
-	Eigen::ArrayXXf stubDiffG;
-	Eigen::ArrayXXf stubDiffB;
-	Eigen::ArrayXXf stubDiffTmp;
+	Eigen::RowVectorXf::Index maxCol;
+	dev.maxCoeff(&maxCol);
+	const unsigned int dx = (const unsigned int) maxCol;
 	
-	unsigned int r, c;
-	unsigned int dnr, dnc;
-	unsigned int dr = 0;
-	unsigned int dc = 0;
+	float* dataM1;
+	float* dataM2;
+	
+	if (devR.sum() > devG.sum()) {
+		dataM1 = &m1.r(0);
+		dataM2 = &m2.r(0);
+	} else if (devG.sum() > devB.sum()) {
+		dataM1 = &m1.g(0);
+		dataM2 = &m2.g(0);
+	} else {
+		dataM1 = &m1.b(0);
+		dataM2 = &m2.b(0);
+	}
+	
+	MatrixChannel stubM1(dataM1, m1.rows, m1.cols);
+	MatrixChannel stubM2(dataM2, m2.rows, m2.cols);
+	
+	Eigen::VectorXf stub = stubM2.block(0, dx, m2.rows, 1);
+	Eigen::ArrayXf stubDiff;
+	Eigen::ArrayXXf matDiff;
+	
+	unsigned int r = 0;
+	unsigned int c = dx;
+	const unsigned int mr = m1.rows - m2.rows;
+	const unsigned int mc = m1.cols - m2.cols + c;
+	
 	unsigned int pixelMiss = 0;
-	
-	printf("m1: %dx%d\n", m1rows, m1cols);
-	printf("m2: %dx%d\n", m2rows, m2cols);
-	
-	do {
-		do {
-			dnr = (nr * m2rows + dr > m1rows) ? nr - 1 : nr;
-			dnc = (nc * m2cols + dc > m1cols) ? nc - 1 : nc;
-			// printf("d: %dx%d, n: %dx%d, dn: %dx%d\n", dr, dc, nr, nc, dnr, dnc);
-			
-			stubR = m2.r.replicate(dnr, dnc);
-			stubG = m2.g.replicate(dnr, dnc);
-			stubB = m2.b.replicate(dnr, dnc);
-			// std::cout << stubR << std::endl << std::endl;
-			
-			stubDiffR = (m1.r.block(dr, dc, m2rows * dnr, m2cols * dnc) - stubR).array().abs();
-			stubDiffG = (m1.g.block(dr, dc, m2rows * dnr, m2cols * dnc) - stubG).array().abs();
-			stubDiffB = (m1.b.block(dr, dc, m2rows * dnr, m2cols * dnc) - stubB).array().abs();
-			// std::cout << stubDiffR << std::endl << std::endl;
-			
-			for (r = 0; r < dnr; r++) {
-				for (c = 0; c < dnc; c++) {
-					
-					// printf("dn: %dx%d\n", dnr, dnc);
-					// printf("q: %dx%d\n", r, c);
-					// printf("-----\n");
-					
-					stubDiffTmp = stubDiffR.block(r * m2rows, c * m2cols, m2rows, m2cols);
-					pixelMiss = (unsigned int) (stubDiffTmp > colorTolerance).count();
-					
-					if (pixelMiss <= pixelTolerance) {
-						stubDiffTmp = stubDiffG.block(r * m2rows, c * m2cols, m2rows, m2cols);
-						pixelMiss += (unsigned int) (stubDiffTmp > colorTolerance).count();
-					}
-					
-					if (pixelMiss <= pixelTolerance) {
-						stubDiffTmp = stubDiffB.block(r * m2rows, c * m2cols, m2rows, m2cols);
-						pixelMiss += (unsigned int) (stubDiffTmp > colorTolerance).count();
-					}
-					
-					// std::cout << stubDiffTmp << std::endl << std::endl;
-					// printf("%d\n", pixelMiss);
-					
-					if (pixelMiss <= pixelTolerance) {
-						printf("~~~!found~~~\n");
-						printf("%dx%d\n", dr + r * m2rows, dc + c * m2cols);
-						printf("~~~found!~~~\n");
-					}
-				}
-			}
-	
-		} while (++dc < m2cols);
-		dc = 0;
-	} while (++dr < m2rows);
-	
+	float accuracy = 0;
 	
 	std::vector<Match> out;
 	
+	do {
+		do {
+			stubDiff = (stubM1.block(r, c, m2.rows, 1) - stub).array().abs();
+			pixelMiss = (unsigned int) (stubDiff > colorTolerance).count();
+			if (pixelMiss > pixelTolerance) continue;
+			
+			matDiff  = (m1.r.block(r, c - dx, m2.rows, m2.cols) - m2.r).array().abs();
+			matDiff += (m1.g.block(r, c - dx, m2.rows, m2.cols) - m2.g).array().abs();
+			matDiff += (m1.b.block(r, c - dx, m2.rows, m2.cols) - m2.b).array().abs();
+			
+			pixelMiss = (unsigned int) (matDiff > colorTolerance).count();
+			if (pixelMiss <= pixelTolerance) {
+				
+				accuracy = matDiff.maxCoeff();
+				accuracy = (accuracy > 0) ? (matDiff / accuracy).sum() : 0;
+				
+				Match res = {
+					r,
+					(c - dx),
+					accuracy
+				};
+				out.push_back(res);
+			}
+		} while (++c <= mc);
+		c = dx;
+	} while (++r <= mr);
+	
 	return out;
 }
-
-// std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
-	
-// 	Eigen::RowVectorXf devR = stdDev(m2.r);
-// 	Eigen::RowVectorXf devG = stdDev(m2.g);
-// 	Eigen::RowVectorXf devB = stdDev(m2.b);
-// 	Eigen::RowVectorXf dev = devR + devG + devB;
-	
-// 	Eigen::RowVectorXf::Index maxCol;
-// 	dev.maxCoeff(&maxCol);
-// 	const unsigned int dx = (const unsigned int) maxCol;
-	
-// 	float* dataM1;
-// 	float* dataM2;
-	
-// 	if (devR.sum() > devG.sum()) {
-// 		dataM1 = &m1.r(0);
-// 		dataM2 = &m2.r(0);
-// 	} else if (devG.sum() > devB.sum()) {
-// 		dataM1 = &m1.g(0);
-// 		dataM2 = &m2.g(0);
-// 	} else {
-// 		dataM1 = &m1.b(0);
-// 		dataM2 = &m2.b(0);
-// 	}
-	
-// 	MatrixChannel stubM1(dataM1, m1.rows, m1.cols);
-// 	MatrixChannel stubM2(dataM2, m2.rows, m2.cols);
-	
-// 	Eigen::VectorXf stub = stubM2.block(0, dx, m2.rows, 1);
-// 	Eigen::ArrayXf stubDiff;
-// 	Eigen::ArrayXXf matDiff;
-	
-// 	unsigned int r = 0;
-// 	unsigned int c = dx;
-// 	const unsigned int mr = m1.rows - m2.rows;
-// 	const unsigned int mc = m1.cols - m2.cols + c;
-	
-// 	unsigned int pixelMiss = 0;
-// 	float accuracy = 0;
-	
-// 	std::vector<Match> out;
-	
-// 	do {
-// 		do {
-// 			stubDiff = (stubM1.block(r, c, m2.rows, 1) - stub).array().abs();
-// 			pixelMiss = (unsigned int) (stubDiff > colorTolerance).count();
-// 			if (pixelMiss > pixelTolerance) continue;
-			
-// 			matDiff  = (m1.r.block(r, c - dx, m2.rows, m2.cols) - m2.r).array().abs();
-// 			matDiff += (m1.g.block(r, c - dx, m2.rows, m2.cols) - m2.g).array().abs();
-// 			matDiff += (m1.b.block(r, c - dx, m2.rows, m2.cols) - m2.b).array().abs();
-			
-// 			pixelMiss = (unsigned int) (matDiff > colorTolerance).count();
-// 			if (pixelMiss <= pixelTolerance) {
-				
-// 				accuracy = matDiff.maxCoeff();
-// 				accuracy = (accuracy > 0) ? (matDiff / accuracy).sum() : 0;
-				
-// 				Match res = {
-// 					r,
-// 					(c - dx),
-// 					accuracy
-// 				};
-// 				out.push_back(res);
-// 			}
-// 		} while (++c <= mc);
-// 		c = dx;
-// 	} while (++r <= mr);
-	
-// 	return out;
-// }
 
 Eigen::RowVectorXf stdDev(const MatrixChannel &m) {
 	const unsigned int N = m.rows();
