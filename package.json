@@ -1,5 +1,9 @@
 {
-	"name": "imagesearch",
-	"version": "0.1.0",
-	"main": "./lib/imagesearch"
+  "name": "imagesearch",
+  "version": "0.1.0",
+  "main": "./lib/imagesearch",
+  "devDependencies": {
+    "async": "^0.8.0",
+    "pngparse": "^2.0.1"
+  }
 }
