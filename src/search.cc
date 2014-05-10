@@ -13,9 +13,12 @@ typedef Eigen::Map<Eigen::Matrix<float, -1, -1, Eigen::RowMajor> > MatrixChannel
 typedef struct {
     unsigned int rows;
     unsigned int cols;
+    unsigned int channels;
+    MatrixChannel k;
     MatrixChannel r;
     MatrixChannel g;
     MatrixChannel b;
+    MatrixChannel a;
 } Matrix;
 
 typedef struct {
@@ -39,6 +42,7 @@ Handle<Value> Search(const Arguments& args) {
     Local<String> rows = String::New("rows");
     Local<String> cols = String::New("cols");
     Local<String> data = String::New("data");
+    Local<String> channels = String::New("channels");
     
     if ( ! matrix1->Has(rows) || ! matrix1->Has(cols) || ! matrix1->Has(data)) {
         return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
@@ -48,102 +52,199 @@ Handle<Value> Search(const Arguments& args) {
         return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
     }
     
-    const unsigned int m1Rows = matrix1->Get(rows)->Int32Value();
-    const unsigned int m1Cols = matrix1->Get(cols)->Int32Value();
+    const unsigned int m1Rows = matrix1->Get(rows)->Uint32Value();
+    const unsigned int m1Cols = matrix1->Get(cols)->Uint32Value();
+    const unsigned int m1Channels = matrix1->Get(channels)->Uint32Value();
     
-    const unsigned int m2Rows = matrix2->Get(rows)->Int32Value();
-    const unsigned int m2Cols = matrix2->Get(cols)->Int32Value();
+    const unsigned int m2Rows = matrix2->Get(rows)->Uint32Value();
+    const unsigned int m2Cols = matrix2->Get(cols)->Uint32Value();
+    const unsigned int m2Channels = matrix2->Get(channels)->Uint32Value();
+    
+    if ((m2Channels - m1Channels) > 1) {
+        return ThrowException(Exception::TypeError(String::New("Channel Mismatch")));
+    }
+    
+    if (m1Channels > 4) {
+        return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
+    }
     
     Handle<Object> m1Data = Handle<Object>::Cast(matrix1->Get(data));
     Handle<Object> m2Data = Handle<Object>::Cast(matrix2->Get(data));
     
-    Local<String> r = String::New("r");
-    Local<String> g = String::New("g");
-    Local<String> b = String::New("b");
-    
-    if ( ! m1Data->Has(r) || ! m1Data->Has(g) || ! m1Data->Has(b)) {
+    if (m1Channels != m1Data->Get(String::New("length"))->Uint32Value()) {
         return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
     }
     
-    if ( ! m2Data->Has(r) || ! m2Data->Has(g) || ! m2Data->Has(b)) {
+    if (m2Channels != m2Data->Get(String::New("length"))->Uint32Value()) {
         return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
     }
     
-    Handle<Object> m1R = Handle<Object>::Cast(m1Data->Get(r));
-    Handle<Object> m1G = Handle<Object>::Cast(m1Data->Get(g));
-    Handle<Object> m1B = Handle<Object>::Cast(m1Data->Get(b));
+    Handle<Object> m1K, m1R, m1G, m1B, m1A;
+    Handle<Object> m2K, m2R, m2G, m2B, m2A;
     
-    Handle<Object> m2R = Handle<Object>::Cast(m2Data->Get(r));
-    Handle<Object> m2G = Handle<Object>::Cast(m2Data->Get(g));
-    Handle<Object> m2B = Handle<Object>::Cast(m2Data->Get(b));
-    
-    // TODO: since nodejs v0.11 check if data is actual typed array instance
-    if (strcmp(*String::AsciiValue(m1R->GetConstructorName()), "Float32Array") != 0 ||
-        strcmp(*String::AsciiValue(m1G->GetConstructorName()), "Float32Array") != 0 ||
-        strcmp(*String::AsciiValue(m1B->GetConstructorName()), "Float32Array") != 0) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+    // TODO: check matrix data type
+    if (m1Channels == 1) {
+        m1K = Handle<Object>::Cast(m1Data->Get(0));
+    } else if (m1Channels == 2) {
+        m1K = Handle<Object>::Cast(m1Data->Get(0));
+        m1A = Handle<Object>::Cast(m1Data->Get(1));
+    } else if (m1Channels == 3) {
+        m1R = Handle<Object>::Cast(m1Data->Get(0));
+        m1G = Handle<Object>::Cast(m1Data->Get(1));
+        m1B = Handle<Object>::Cast(m1Data->Get(2));
+    } else if (m1Channels == 4) {
+        m1R = Handle<Object>::Cast(m1Data->Get(0));
+        m1G = Handle<Object>::Cast(m1Data->Get(1));
+        m1B = Handle<Object>::Cast(m1Data->Get(2));
+        m1A = Handle<Object>::Cast(m1Data->Get(3));
     }
     
-    if (strcmp(*String::AsciiValue(m2R->GetConstructorName()), "Float32Array") != 0 ||
-        strcmp(*String::AsciiValue(m2G->GetConstructorName()), "Float32Array") != 0 ||
-        strcmp(*String::AsciiValue(m2B->GetConstructorName()), "Float32Array") != 0) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+    if (m2Channels == 1) {
+        m2K = Handle<Object>::Cast(m2Data->Get(0));
+    } else if (m2Channels == 2) {
+        m2K = Handle<Object>::Cast(m2Data->Get(0));
+        m2A = Handle<Object>::Cast(m2Data->Get(1));
+    } else if (m2Channels == 3) {
+        m2R = Handle<Object>::Cast(m2Data->Get(0));
+        m2G = Handle<Object>::Cast(m2Data->Get(1));
+        m2B = Handle<Object>::Cast(m2Data->Get(2));
+    } else if (m2Channels == 4) {
+        m2R = Handle<Object>::Cast(m2Data->Get(0));
+        m2G = Handle<Object>::Cast(m2Data->Get(1));
+        m2B = Handle<Object>::Cast(m2Data->Get(2));
+        m2A = Handle<Object>::Cast(m2Data->Get(3));
     }
     
-    size_t m1RL = node::Buffer::Length(m1R);
-    char* m1RD = node::Buffer::Data(m1R);
-    float* m1RDi = (float*) &m1RD[0];
+    size_t m1KL, m1RL, m1GL, m1BL, m1AL;
+    char* m1KD;
+    char* m1RD;
+    char* m1GD;
+    char* m1BD;
+    char* m1AD;
+    float* m1KDi;
+    float* m1RDi;
+    float* m1GDi;
+    float* m1BDi;
+    float* m1ADi;
     
-    size_t m1GL = node::Buffer::Length(m1G);
-    char* m1GD = node::Buffer::Data(m1G);
-    float* m1GDi = (float*) &m1GD[0];
+    size_t m2KL, m2RL, m2GL, m2BL, m2AL;
+    char* m2KD;
+    char* m2RD;
+    char* m2GD;
+    char* m2BD;
+    char* m2AD;
+    float* m2KDi;
+    float* m2RDi;
+    float* m2GDi;
+    float* m2BDi;
+    float* m2ADi;
     
-    size_t m1BL = node::Buffer::Length(m1B);
-    char* m1BD = node::Buffer::Data(m1B);
-    float* m1BDi = (float*) &m1BD[0];
-    
-    size_t m2RL = node::Buffer::Length(m2R);
-    char* m2RD = node::Buffer::Data(m2R);
-    float* m2RDi = (float*) &m2RD[0];
-    
-    size_t m2GL = node::Buffer::Length(m2G);
-    char* m2GD = node::Buffer::Data(m2G);
-    float* m2GDi = (float*) &m2GD[0];
-    
-    size_t m2BL = node::Buffer::Length(m2B);
-    char* m2BD = node::Buffer::Data(m2B);
-    float* m2BDi = (float*) &m2BD[0];
-    
-    if (m1RL != m1GL || m1RL != m1BL || m1RL != m1Rows * m1Cols) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+    if (m2Channels == 1 || m2Channels == 2) {
+        m1KL = node::Buffer::Length(m1K);
+        m1KD = node::Buffer::Data(m1K);
+        m1KDi = (float*) &m1KD[0];
+        
+        m2KL = node::Buffer::Length(m2K);
+        m2KD = node::Buffer::Data(m2K);
+        m2KDi = (float*) &m2KD[0];
     }
     
-    if (m2RL != m2GL || m2RL != m2BL || m2RL != m2Rows * m2Cols) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+    if (m2Channels == 3 || m2Channels == 4) {
+        m1RL = node::Buffer::Length(m1R);
+        m1RD = node::Buffer::Data(m1R);
+        m1RDi = (float*) &m1RD[0];
+        
+        m1GL = node::Buffer::Length(m1G);
+        m1GD = node::Buffer::Data(m1G);
+        m1GDi = (float*) &m1GD[0];
+        
+        m1BL = node::Buffer::Length(m1B);
+        m1BD = node::Buffer::Data(m1B);
+        m1BDi = (float*) &m1BD[0];
+        
+        m2RL = node::Buffer::Length(m2R);
+        m2RD = node::Buffer::Data(m2R);
+        m2RDi = (float*) &m2RD[0];
+        
+        m2GL = node::Buffer::Length(m2G);
+        m2GD = node::Buffer::Data(m2G);
+        m2GDi = (float*) &m2GD[0];
+        
+        m2BL = node::Buffer::Length(m2B);
+        m2BD = node::Buffer::Data(m2B);
+        m2BDi = (float*) &m2BD[0];
     }
     
+    if (m1Channels == 2 || m1Channels == 4) {
+        m1AL = node::Buffer::Length(m1A);
+        m1AD = (char*) node::Buffer::Data(m1A);
+        m1ADi = (float*) &m1AD[0];
+    }
+    
+    if (m2Channels == 2 || m2Channels == 4) {
+        m2AL = node::Buffer::Length(m2A);
+        m2AD = (char*) node::Buffer::Data(m2A);
+        m2ADi = (float*) &m2AD[0];
+    }
+    
+    if (m1Channels == 2) {
+        if (m1KL != m1AL) {
+            return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+        }
+        
+        if (m2KL != m2AL) {
+            return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+        }
+    } else if (m1Channels == 3) {
+        if (m1RL != m1GL || m1RL != m1BL) {
+            return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+        }
+        
+        if (m2RL != m2GL || m2RL != m2BL) {
+            return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+        }
+    } else if (m1Channels == 4) {
+        if (m1RL != m1GL || m1RL != m1BL || m1RL != m1AL) {
+            return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+        }
+        
+        if (m2RL != m2GL || m2RL != m2BL || m2RL != m2AL) {
+            return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+        }
+    }
+    
+    MatrixChannel m1KMat(m1KDi, m1Rows, m1Cols);
     MatrixChannel m1RMat(m1RDi, m1Rows, m1Cols);
     MatrixChannel m1GMat(m1GDi, m1Rows, m1Cols);
     MatrixChannel m1BMat(m1BDi, m1Rows, m1Cols);
+    MatrixChannel m1AMat(m1ADi, m1Rows, m1Cols);
     
+    MatrixChannel m2KMat(m2KDi, m2Rows, m2Cols);
     MatrixChannel m2RMat(m2RDi, m2Rows, m2Cols);
     MatrixChannel m2GMat(m2GDi, m2Rows, m2Cols);
     MatrixChannel m2BMat(m2BDi, m2Rows, m2Cols);
+    MatrixChannel m2AMat(m2ADi, m2Rows, m2Cols);
     
     Matrix m1 = {
         m1Rows,
         m1Cols,
+        m1Channels,
+        m1KMat,
         m1RMat,
         m1GMat,
-        m1BMat
+        m1BMat,
+        m1AMat
     };
     
     Matrix m2 = {
         m2Rows,
         m2Cols,
+        m2Channels,
+        m2KMat,
         m2RMat,
         m2GMat,
-        m2BMat
+        m2BMat,
+        m2AMat
     };
     
     std::vector<Match> result = search(m1, m2, colorTolerance, pixelTolerance);
@@ -169,10 +270,18 @@ Handle<Value> Search(const Arguments& args) {
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
     
-    Eigen::RowVectorXf devR = stdDev(m2.r);
-    Eigen::RowVectorXf devG = stdDev(m2.g);
-    Eigen::RowVectorXf devB = stdDev(m2.b);
-    Eigen::RowVectorXf dev = devR + devG + devB;
+    Eigen::RowVectorXf devK, devR, devG, devB, devA;
+    Eigen::RowVectorXf dev = Eigen::RowVectorXf::Zero(m2.cols);
+    
+    if (m1.channels < 3) {
+        devK = stdDev(m2.k);
+        dev += devK;
+    } else {
+        devR = stdDev(m2.r);
+        devG = stdDev(m2.g);
+        devB = stdDev(m2.b);
+        dev += devR + devG + devB;
+    }
     
     Eigen::RowVectorXf::Index maxCol;
     dev.maxCoeff(&maxCol);
@@ -181,15 +290,20 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
     float* dataM1;
     float* dataM2;
     
-    if (devR.sum() > devG.sum()) {
-        dataM1 = &m1.r(0);
-        dataM2 = &m2.r(0);
-    } else if (devG.sum() > devB.sum()) {
-        dataM1 = &m1.g(0);
-        dataM2 = &m2.g(0);
+    if (m1.channels < 3) {
+        dataM1 = &m1.k(0);
+        dataM2 = &m2.k(0);
     } else {
-        dataM1 = &m1.b(0);
-        dataM2 = &m2.b(0);
+        if (devR.sum() > devG.sum()) {
+            dataM1 = &m1.r(0);
+            dataM2 = &m2.r(0);
+        } else if (devG.sum() > devB.sum()) {
+            dataM1 = &m1.g(0);
+            dataM2 = &m2.g(0);
+        } else {
+            dataM1 = &m1.b(0);
+            dataM2 = &m2.b(0);
+        }
     }
     
     MatrixChannel stubM1(dataM1, m1.rows, m1.cols);
@@ -204,6 +318,8 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
     const unsigned int mr = m1.rows - m2.rows;
     const unsigned int mc = m1.cols - m2.cols + c;
     
+    // TODO: adjust point colot tolerance according to alpha channel
+    // unsigned int pointColorTolerance = 0;
     unsigned int pixelMiss = 0;
     float accuracy = 0;
     
@@ -215,11 +331,16 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
             pixelMiss = (unsigned int) (stubDiff > colorTolerance).count();
             if (pixelMiss > pixelTolerance) continue;
             
-            matDiff  = (m1.r.block(r, c - dx, m2.rows, m2.cols) - m2.r).array().abs();
-            matDiff += (m1.g.block(r, c - dx, m2.rows, m2.cols) - m2.g).array().abs();
-            matDiff += (m1.b.block(r, c - dx, m2.rows, m2.cols) - m2.b).array().abs();
+            if (m1.channels < 3) {
+                matDiff  = (m1.k.block(r, c - dx, m2.rows, m2.cols) - m2.k).array().abs();
+            } else {
+                matDiff  = (m1.r.block(r, c - dx, m2.rows, m2.cols) - m2.r).array().abs();
+                matDiff += (m1.g.block(r, c - dx, m2.rows, m2.cols) - m2.g).array().abs();
+                matDiff += (m1.b.block(r, c - dx, m2.rows, m2.cols) - m2.b).array().abs();
+            }
             
             pixelMiss = (unsigned int) (matDiff > colorTolerance).count();
+            
             if (pixelMiss <= pixelTolerance) {
                 
                 accuracy = matDiff.maxCoeff();
