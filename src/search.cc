@@ -116,28 +116,12 @@ Handle<Value> Search(const Arguments& args) {
     }
     
     size_t m1KL, m1RL, m1GL, m1BL, m1AL;
-    char* m1KD;
-    char* m1RD;
-    char* m1GD;
-    char* m1BD;
-    char* m1AD;
-    float* m1KDi;
-    float* m1RDi;
-    float* m1GDi;
-    float* m1BDi;
-    float* m1ADi;
+    char *m1KD, *m1RD, *m1GD, *m1BD, *m1AD;
+    float *m1KDi, *m1RDi, *m1GDi, *m1BDi, *m1ADi;
     
     size_t m2KL, m2RL, m2GL, m2BL, m2AL;
-    char* m2KD;
-    char* m2RD;
-    char* m2GD;
-    char* m2BD;
-    char* m2AD;
-    float* m2KDi;
-    float* m2RDi;
-    float* m2GDi;
-    float* m2BDi;
-    float* m2ADi;
+    char *m2KD, *m2RD, *m2GD, *m2BD, *m2AD;
+    float *m2KDi, *m2RDi, *m2GDi, *m2BDi, *m2ADi;
     
     if (m2Channels == 1 || m2Channels == 2) {
         m1KL = node::Buffer::Length(m1K);
