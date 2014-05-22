@@ -2,6 +2,7 @@
 #include <cmath>
 #include <vector>
 
+#include <uv.h>
 #include <node.h>
 #include <node_buffer.h>
 
@@ -27,6 +28,18 @@ typedef struct {
     double accuracy;
 } Match;
 
+struct search_baton {
+    uv_work_t req;
+    Matrix *m1;
+    Matrix *m2;
+    unsigned int colorTolerance;
+    unsigned int pixelTolerance;
+    Persistent<Function> callback;
+    std::vector<Match> *result;
+};
+
+void search_do(uv_work_t *req);
+void search_after(uv_work_t *req);
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance);
 Eigen::RowVectorXf stdDev(const MatrixChannel &m);
 
@@ -38,6 +51,8 @@ Handle<Value> Search(const Arguments& args) {
     
     Handle<Object> matrix1 = Handle<Object>::Cast(args[0]);
     Handle<Object> matrix2 = Handle<Object>::Cast(args[1]);
+    
+    Persistent<Function> callback = Persistent<Function>::New(Local<Function>::Cast(args[4]));
     
     Local<String> rows = String::New("rows");
     Local<String> cols = String::New("cols");
@@ -231,8 +246,29 @@ Handle<Value> Search(const Arguments& args) {
         m2AMat
     };
     
-    std::vector<Match> result = search(m1, m2, colorTolerance, pixelTolerance);
-    Local<Array> out = Array::New((int) result.size());
+    search_baton *baton = new search_baton;
+    baton->req.data = (void*) baton;
+    baton->m1 = &m1;
+    baton->m2 = &m2;
+    baton->colorTolerance = colorTolerance;
+    baton->pixelTolerance = pixelTolerance;
+    baton->callback = callback;
+    
+    uv_queue_work(uv_default_loop(), &baton->req, search_do, (uv_after_work_cb)search_after);
+    
+    return Undefined();
+}
+
+void search_do(uv_work_t *req) {
+    search_baton *baton = static_cast<search_baton*>(req->data);
+    std::vector<Match> result = search(*(baton->m1), *(baton->m2), baton->colorTolerance, baton->pixelTolerance);
+    baton->result = &result;
+}
+
+void search_after(uv_work_t *req) {
+    search_baton *baton = static_cast<search_baton*>(req->data);
+    
+    Local<Array> out = Array::New((int) baton->result->size());
     Local<Object> match;
     
     Local<String> row = String::New("row");
@@ -240,7 +276,7 @@ Handle<Value> Search(const Arguments& args) {
     Local<String> accuracy = String::New("accuracy");
     
     int i = 0;
-    for (std::vector<Match>::iterator it = result.begin(); it != result.end(); it++) {
+    for (std::vector<Match>::iterator it = baton->result->begin(); it != baton->result->end(); it++) {
         match = Object::New();
         match->Set(row, Number::New(it->row));
         match->Set(col, Number::New(it->col));
@@ -249,7 +285,11 @@ Handle<Value> Search(const Arguments& args) {
         out->Set(i++, match);
     }
     
-    return scope.Close(out);
+    Handle<Value> argv[] = { Null(), out };
+    baton->callback->Call(Context::GetCurrent()->Global(), 2, argv);
+    
+    delete baton;
+    baton = NULL;
 }
 
 std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
