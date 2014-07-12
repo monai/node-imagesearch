@@ -1,9 +1,25 @@
 {
-  "name": "imagesearch",
-  "version": "0.1.0",
-  "main": "./lib/imagesearch",
+  "name": "node-imagesearch",
+  "version": "0.0.0",
+  "description": "Fuzzy search for subimage within image",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
   "devDependencies": {
     "async": "^0.8.0",
-    "pngparse": "^2.0.1"
-  }
+    "pngparse": "^2.0.1",
+    "mocha": "^1.20.1"
+  },
+  "scripts": {
+    "test": "mocha -R spec spec",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@bitbucket.org:monai/node-imagesearch.git"
+  },
+  "author": "monai",
+  "license": "ISC",
+  "gypfile": true
 }
