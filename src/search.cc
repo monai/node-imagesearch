@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <string.h>
 
 #include <uv.h>
 #include <node.h>
@@ -8,41 +9,9 @@
 
 #include <Eigen/Dense>
 
+#include "search.h"
+
 using namespace v8;
-
-typedef Eigen::Map<Eigen::Matrix<float, -1, -1, Eigen::RowMajor> > MatrixChannel;
-
-typedef struct {
-    unsigned int rows;
-    unsigned int cols;
-    unsigned int channels;
-    MatrixChannel *k;
-    MatrixChannel *r;
-    MatrixChannel *g;
-    MatrixChannel *b;
-    MatrixChannel *a;
-} Matrix;
-
-typedef struct {
-    unsigned int row;
-    unsigned int col;
-    double accuracy;
-} Match;
-
-struct AsyncBaton {
-    uv_work_t request;
-    Persistent<Function> callback;
-    Matrix *m1;
-    Matrix *m2;
-    unsigned int colorTolerance;
-    unsigned int pixelTolerance;
-    std::vector<Match> result;
-};
-
-void searchDo(uv_work_t *request);
-void searchAfter(uv_work_t *request);
-std::vector<Match> search(Matrix *&m1, Matrix *&m2, unsigned int colorTolerance, unsigned int pixelTolerance);
-Eigen::RowVectorXf stdDev(MatrixChannel *&m);
 
 Handle<Value> Search(const Arguments& args) {
     HandleScope scope;
