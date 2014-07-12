@@ -194,37 +194,25 @@ Handle<Value> Search(const Arguments& args) {
         }
     }
     
-    MatrixChannel *m1KMat = new MatrixChannel(m1KDi, m1Rows, m1Cols);
-    MatrixChannel *m1RMat = new MatrixChannel(m1RDi, m1Rows, m1Cols);
-    MatrixChannel *m1GMat = new MatrixChannel(m1GDi, m1Rows, m1Cols);
-    MatrixChannel *m1BMat = new MatrixChannel(m1BDi, m1Rows, m1Cols);
-    MatrixChannel *m1AMat = new MatrixChannel(m1ADi, m1Rows, m1Cols);
-    
-    MatrixChannel *m2KMat = new MatrixChannel(m2KDi, m2Rows, m2Cols);
-    MatrixChannel *m2RMat = new MatrixChannel(m2RDi, m2Rows, m2Cols);
-    MatrixChannel *m2GMat = new MatrixChannel(m2GDi, m2Rows, m2Cols);
-    MatrixChannel *m2BMat = new MatrixChannel(m2BDi, m2Rows, m2Cols);
-    MatrixChannel *m2AMat = new MatrixChannel(m2ADi, m2Rows, m2Cols);
-    
-    Matrix *m1 = new Matrix;
+    Cargo *m1 = new Cargo;
     m1->rows = m1Rows;
     m1->cols = m1Cols;
     m1->channels = m1Channels;
-    m1->k = m1KMat;
-    m1->r = m1RMat;
-    m1->g = m1GMat;
-    m1->b = m1BMat;
-    m1->a = m1AMat;
+    m1->k = m1KDi;
+    m1->r = m1RDi;
+    m1->g = m1GDi;
+    m1->b = m1BDi;
+    m1->a = m1ADi;
     
-    Matrix *m2 = new Matrix;
+    Cargo *m2 = new Cargo;
     m2->rows = m2Rows;
     m2->cols = m2Cols;
     m2->channels = m2Channels;
-    m2->k = m2KMat;
-    m2->r = m2RMat;
-    m2->g = m2GMat;
-    m2->b = m2BMat;
-    m2->a = m2AMat;
+    m2->k = m2KDi;
+    m2->r = m2RDi;
+    m2->g = m2GDi;
+    m2->b = m2BDi;
+    m2->a = m2ADi;
     
     AsyncBaton *baton = new AsyncBaton;
     baton->request.data = baton;
@@ -233,7 +221,7 @@ Handle<Value> Search(const Arguments& args) {
     baton->m2 = m2;
     baton->colorTolerance = colorTolerance;
     baton->pixelTolerance = pixelTolerance;
-    
+
     uv_queue_work(uv_default_loop(), &baton->request, searchDo, (uv_after_work_cb)searchAfter);
     
     return Undefined();
@@ -241,8 +229,42 @@ Handle<Value> Search(const Arguments& args) {
 
 void searchDo(uv_work_t *request) {
     AsyncBaton *baton = static_cast<AsyncBaton*>(request->data);
-    Matrix *m1 = static_cast<Matrix*>(baton->m1);
-    Matrix *m2 = static_cast<Matrix*>(baton->m2);
+    Cargo *m1D = static_cast<Cargo*>(baton->m1);
+    Cargo *m2D = static_cast<Cargo*>(baton->m2);
+    
+    MatrixChannel m1KMat(m1D->k, m1D->rows, m1D->cols);
+    MatrixChannel m1RMat(m1D->r, m1D->rows, m1D->cols);
+    MatrixChannel m1GMat(m1D->g, m1D->rows, m1D->cols);
+    MatrixChannel m1BMat(m1D->b, m1D->rows, m1D->cols);
+    MatrixChannel m1AMat(m1D->a, m1D->rows, m1D->cols);
+    
+    MatrixChannel m2KMat(m2D->k, m2D->rows, m2D->cols);
+    MatrixChannel m2RMat(m2D->r, m2D->rows, m2D->cols);
+    MatrixChannel m2GMat(m2D->g, m2D->rows, m2D->cols);
+    MatrixChannel m2BMat(m2D->b, m2D->rows, m2D->cols);
+    MatrixChannel m2AMat(m2D->a, m2D->rows, m2D->cols);
+    
+    Matrix m1 = {
+        m1D->rows,
+        m1D->cols,
+        m1D->channels,
+        m1KMat,
+        m1RMat,
+        m1GMat,
+        m1BMat,
+        m1AMat
+    };
+    
+    Matrix m2 = {
+        m2D->rows,
+        m2D->cols,
+        m2D->channels,
+        m2KMat,
+        m2RMat,
+        m2GMat,
+        m2BMat,
+        m2AMat
+    };
     
     std::vector<Match> result = search(m1, m2, baton->colorTolerance, baton->pixelTolerance);
     baton->result = result;
@@ -275,17 +297,17 @@ void searchAfter(uv_work_t *request) {
     baton = NULL;
 }
 
-std::vector<Match> search(Matrix *&m1, Matrix *&m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
+std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance) {
     Eigen::RowVectorXf devK, devR, devG, devB, devA;
-    Eigen::RowVectorXf dev = Eigen::RowVectorXf::Zero(m2->cols);
+    Eigen::RowVectorXf dev = Eigen::RowVectorXf::Zero(m2.cols);
     
-    if (m1->channels < 3) {
-        devK = stdDev(m2->k);
+    if (m1.channels < 3) {
+        devK = stdDev(m2.k);
         dev += devK;
     } else {
-        devR = stdDev(m2->r);
-        devG = stdDev(m2->g);
-        devB = stdDev(m2->b);
+        devR = stdDev(m2.r);
+        devG = stdDev(m2.g);
+        devB = stdDev(m2.b);
         dev += devR + devG + devB;
     }
     
@@ -296,33 +318,33 @@ std::vector<Match> search(Matrix *&m1, Matrix *&m2, unsigned int colorTolerance,
     float* dataM1;
     float* dataM2;
     
-    if (m1->channels < 3) {
-        dataM1 = (float *) m1->k;
-        dataM2 = (float *) m2->k;
+    if (m1.channels < 3) {
+        dataM1 = &m1.k(0);
+        dataM2 = &m2.k(0);
     } else {
         if (devR.sum() > devG.sum()) {
-            dataM1 = (float *) m1->r;
-            dataM2 = (float *) m2->r;
+            dataM1 = &m1.r(0);
+            dataM2 = &m2.r(0);
         } else if (devG.sum() > devB.sum()) {
-            dataM1 = (float *) m1->g;
-            dataM2 = (float *) m2->g;
+            dataM1 = &m1.g(0);
+            dataM2 = &m2.g(0);
         } else {
-            dataM1 = (float *) m1->b;
-            dataM2 = (float *) m2->b;
+            dataM1 = &m1.b(0);
+            dataM2 = &m2.b(0);
         }
     }
     
-    MatrixChannel stubM1(dataM1, m1->rows, m1->cols);
-    MatrixChannel stubM2(dataM2, m2->rows, m2->cols);
+    MatrixChannel stubM1(dataM1, m1.rows, m1.cols);
+    MatrixChannel stubM2(dataM2, m2.rows, m2.cols);
     
-    Eigen::VectorXf stub = stubM2.block(0, dx, m2->rows, 1);
+    Eigen::VectorXf stub = stubM2.block(0, dx, m2.rows, 1);
     Eigen::ArrayXf stubDiff;
     Eigen::ArrayXXf matDiff;
     
     unsigned int r = 0;
     unsigned int c = dx;
-    const unsigned int mr = m1->rows - m2->rows;
-    const unsigned int mc = m1->cols - m2->cols + c;
+    const unsigned int mr = m1.rows - m2.rows;
+    const unsigned int mc = m1.cols - m2.cols + c;
     
     // TODO: adjust point colot tolerance according to alpha channel
     // unsigned int pointColorTolerance = 0;
@@ -332,16 +354,16 @@ std::vector<Match> search(Matrix *&m1, Matrix *&m2, unsigned int colorTolerance,
     std::vector<Match> out;
     do {
         do {
-            stubDiff = (stubM1.block(r, c, m2->rows, 1) - stub).array().abs();
+            stubDiff = (stubM1.block(r, c, m2.rows, 1) - stub).array().abs();
             pixelMiss = (unsigned int) (stubDiff > colorTolerance).count();
             if (pixelMiss > pixelTolerance) continue;
             
-            if (m1->channels < 3) {
-                matDiff  = (m1->k->block(r, c - dx, m2->rows, m2->cols) - m2->k->block(0, 0, m2-> rows, m2->cols)).array().abs();
+            if (m1.channels < 3) {
+                matDiff  = (m1.k.block(r, c - dx, m2.rows, m2.cols) - m2.k).array().abs();
             } else {
-                matDiff  = (m1->r->block(r, c - dx, m2->rows, m2->cols) - m2->r->block(0, 0, m2-> rows, m2->cols)).array().abs();
-                matDiff += (m1->g->block(r, c - dx, m2->rows, m2->cols) - m2->g->block(0, 0, m2-> rows, m2->cols)).array().abs();
-                matDiff += (m1->b->block(r, c - dx, m2->rows, m2->cols) - m2->b->block(0, 0, m2-> rows, m2->cols)).array().abs();
+                matDiff  = (m1.r.block(r, c - dx, m2.rows, m2.cols) - m2.r).array().abs();
+                matDiff += (m1.g.block(r, c - dx, m2.rows, m2.cols) - m2.g).array().abs();
+                matDiff += (m1.b.block(r, c - dx, m2.rows, m2.cols) - m2.b).array().abs();
             }
             
             pixelMiss = (unsigned int) (matDiff > colorTolerance).count();
@@ -364,9 +386,9 @@ std::vector<Match> search(Matrix *&m1, Matrix *&m2, unsigned int colorTolerance,
     return out;
 }
 
-Eigen::RowVectorXf stdDev(MatrixChannel *&m) {
-    const unsigned int N = m->rows();
-    return ((m->rowwise() - (m->colwise().sum() / N)).array().square().colwise().sum() / N).array().sqrt();
+Eigen::RowVectorXf stdDev(MatrixChannel &m) {
+    const unsigned int N = m.rows();
+    return ((m.rowwise() - (m.colwise().sum() / N)).array().square().colwise().sum() / N).array().sqrt();
 }
 
 void Init(Handle<Object> exports) {

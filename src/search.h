@@ -48,7 +48,7 @@ struct AsyncBaton {
 
 void searchDo(uv_work_t *request);
 void searchAfter(uv_work_t *request);
-std::vector<Match> search(Matrix *&m1, Matrix *&m2, unsigned int colorTolerance, unsigned int pixelTolerance);
-Eigen::RowVectorXf stdDev(MatrixChannel *&m);
+std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, unsigned int pixelTolerance);
+Eigen::RowVectorXf stdDev(MatrixChannel &m);
 
 #endif
