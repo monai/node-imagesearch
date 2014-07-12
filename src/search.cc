@@ -221,7 +221,7 @@ Handle<Value> Search(const Arguments& args) {
     baton->m2 = m2;
     baton->colorTolerance = colorTolerance;
     baton->pixelTolerance = pixelTolerance;
-
+    
     uv_queue_work(uv_default_loop(), &baton->request, searchDo, (uv_after_work_cb)searchAfter);
     
     return Undefined();
@@ -232,38 +232,26 @@ void searchDo(uv_work_t *request) {
     Cargo *m1D = static_cast<Cargo*>(baton->m1);
     Cargo *m2D = static_cast<Cargo*>(baton->m2);
     
-    MatrixChannel m1KMat(m1D->k, m1D->rows, m1D->cols);
-    MatrixChannel m1RMat(m1D->r, m1D->rows, m1D->cols);
-    MatrixChannel m1GMat(m1D->g, m1D->rows, m1D->cols);
-    MatrixChannel m1BMat(m1D->b, m1D->rows, m1D->cols);
-    MatrixChannel m1AMat(m1D->a, m1D->rows, m1D->cols);
-    
-    MatrixChannel m2KMat(m2D->k, m2D->rows, m2D->cols);
-    MatrixChannel m2RMat(m2D->r, m2D->rows, m2D->cols);
-    MatrixChannel m2GMat(m2D->g, m2D->rows, m2D->cols);
-    MatrixChannel m2BMat(m2D->b, m2D->rows, m2D->cols);
-    MatrixChannel m2AMat(m2D->a, m2D->rows, m2D->cols);
-    
     Matrix m1 = {
         m1D->rows,
         m1D->cols,
         m1D->channels,
-        m1KMat,
-        m1RMat,
-        m1GMat,
-        m1BMat,
-        m1AMat
+        MatrixChannel(m1D->k, m1D->rows, m1D->cols),
+        MatrixChannel(m1D->r, m1D->rows, m1D->cols),
+        MatrixChannel(m1D->g, m1D->rows, m1D->cols),
+        MatrixChannel(m1D->b, m1D->rows, m1D->cols),
+        MatrixChannel(m1D->a, m1D->rows, m1D->cols)
     };
     
     Matrix m2 = {
         m2D->rows,
         m2D->cols,
         m2D->channels,
-        m2KMat,
-        m2RMat,
-        m2GMat,
-        m2BMat,
-        m2AMat
+        MatrixChannel(m2D->k, m2D->rows, m2D->cols),
+        MatrixChannel(m2D->r, m2D->rows, m2D->cols),
+        MatrixChannel(m2D->g, m2D->rows, m2D->cols),
+        MatrixChannel(m2D->b, m2D->rows, m2D->cols),
+        MatrixChannel(m2D->a, m2D->rows, m2D->cols)        
     };
     
     std::vector<Match> result = search(m1, m2, baton->colorTolerance, baton->pixelTolerance);
