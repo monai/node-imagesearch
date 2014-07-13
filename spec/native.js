@@ -127,6 +127,124 @@ describe('native addon', function () {
                 { rows: 0, cols: 0, data: null, channels: 3 }
             );
         });
+    });
+    
+    describe('"matrix.channels" and "matrix.data.length" correspondence', function () {
+        it('should throw error if "imgMatrix.channels != imgMatrix.data.length"', function () {
+            testError(/Bad argument 'imgMatrix'/,
+                { rows: 0, cols: 0, data: { length: 0 }, channels: 1 },
+                { rows: 0, cols: 0, data: null, channels: 1 }
+            );
+        });
         
+        it('should throw error if "tplMatrix.channels != tplMatrix.data.length"', function () {
+            testError(/Bad argument 'tplMatrix'/,
+                { rows: 0, cols: 0, data: { length: 1 }, channels: 1 },
+                { rows: 0, cols: 0, data: { length: 0 }, channels: 1 }
+            );
+        });
+    });
+    
+    describe('"matrix.data" channel buffer length correspondence', function () {
+        it('should throw error if K and A cahnnel length in "imgMatrix" is not equal', function () {
+            testError(/Bad argument 'imgMatrix.data'/,
+                { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(1) ], channels: 2 },
+                { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1) ], channels: 2 }
+            );
+        });
+        
+        it('should throw error if R, G, and B cahnnel length in RGB "imgMatrix" is not equal', function () {
+            testError(/Bad argument 'imgMatrix.data'/,
+                { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(1), new Float32Array(1) ], channels: 3 },
+                { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1) ], channels: 3 }
+            );
+            
+            testError(/Bad argument 'imgMatrix.data'/,
+                { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(0), new Float32Array(1) ], channels: 3 },
+                { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1) ], channels: 3 }
+            );
+        });
+        
+        it('should throw error if R, G, B, and A cahnnel length in RGBA "imgMatrix" is not equal', function () {
+            testError(/Bad argument 'imgMatrix.data'/, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(0), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            }, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            });
+            
+            testError(/Bad argument 'imgMatrix.data'/, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(0),new Float32Array(0), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            }, { rows: 0, cols: 0,
+                data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            });
+            
+            testError(/Bad argument 'imgMatrix.data'/, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(0), new Float32Array(0), new Float32Array(0), new Float32Array(1) ],
+                channels: 4
+            }, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            });
+        });
+        
+        it('should throw error if K and A cahnnel length in "tplMatrix" is not equal', function () {
+            testError(/Bad argument 'tplMatrix.data'/,
+                { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1) ], channels: 2 },
+                { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(1) ], channels: 2 }
+            );
+        });
+        
+        it('should throw error if R, G, and B cahnnel length in RGB "tplMatrix" is not equal', function () {
+            testError(/Bad argument 'tplMatrix.data'/,
+                { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1) ], channels: 3 },
+                { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(1), new Float32Array(1) ], channels: 3 }
+            );
+            
+            testError(/Bad argument 'tplMatrix.data'/,
+                { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1) ], channels: 3 },
+                { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(0), new Float32Array(1) ], channels: 3 }
+            );
+        });
+        
+        it('should throw error if R, G, B, and A cahnnel length in RGBA "tplMatrix" is not equal', function () {
+            testError(/Bad argument 'tplMatrix.data'/, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            }, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(0), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            });
+            
+            testError(/Bad argument 'tplMatrix.data'/, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            }, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(0),new Float32Array(0), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            });
+            
+            testError(/Bad argument 'tplMatrix.data'/, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(1), new Float32Array(1), new Float32Array(1), new Float32Array(1) ],
+                channels: 4
+            }, {
+                rows: 0, cols: 0,
+                data: [ new Float32Array(0), new Float32Array(0), new Float32Array(0), new Float32Array(1) ],
+                channels: 4
+            });
+        });
     });
 });
