@@ -49,12 +49,12 @@ Handle<Value> Search(const Arguments& args) {
     const unsigned int m2Channels = matrix2->Get(channels)->Uint32Value();
     
     // channel count validation
-    if ((m2Channels - m1Channels) > 1) {
-        return ThrowException(Exception::TypeError(String::New("Channel Mismatch")));
+    if (m1Channels < 1 || m2Channels < 1 || m1Channels > 4 || m2Channels > 4) {
+        return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
     }
     
-    if (m1Channels > 4) {
-        return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
+    if ((m2Channels - m1Channels) > 1) {
+        return ThrowException(Exception::TypeError(String::New("Channel mismatch")));
     }
     
     // unwrap matrix.data
