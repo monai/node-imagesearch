@@ -30,12 +30,12 @@ Handle<Value> Search(const Arguments& args) {
     
     Persistent<Function> callback = Persistent<Function>::New(Local<Function>::Cast(args[4]));
     
-    // checko for required matrix properties
-    if ( ! matrix1->Has(rows) || ! matrix1->Has(cols) || ! matrix1->Has(data)) {
+    // check for required matrix properties
+    if ( ! matrix1->Has(rows) || ! matrix1->Has(cols) || ! matrix1->Has(channels) || ! matrix1->Has(data)) {
         return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
     }
     
-    if ( ! matrix2->Has(rows) || ! matrix2->Has(cols) || ! matrix2->Has(data)) {
+    if ( ! matrix2->Has(rows) || ! matrix2->Has(cols) || ! matrix2->Has(channels) || ! matrix2->Has(data)) {
         return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
     }
     
