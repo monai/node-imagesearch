@@ -84,7 +84,9 @@ Handle<Value> Search(const Arguments& args) {
         m1B = Handle<Object>::Cast(m1Data->Get(2));
     }
     
-    if (m1Channels == 2 || m1Channels == 4) {
+    if (m1Channels == 2) {
+        m1A = Handle<Object>::Cast(m1Data->Get(1));
+    } else if (m1Channels == 4) {
         m1A = Handle<Object>::Cast(m1Data->Get(3));
     }
     
@@ -96,7 +98,9 @@ Handle<Value> Search(const Arguments& args) {
         m2B = Handle<Object>::Cast(m2Data->Get(2));
     }
     
-    if (m2Channels == 2 || m2Channels == 4) {
+    if (m2Channels == 2) {
+        m2A = Handle<Object>::Cast(m2Data->Get(1));
+    } else if (m2Channels == 4) {
         m2A = Handle<Object>::Cast(m2Data->Get(3));
     }
     
@@ -222,7 +226,7 @@ Handle<Value> Search(const Arguments& args) {
     baton->colorTolerance = colorTolerance;
     baton->pixelTolerance = pixelTolerance;
     
-    uv_queue_work(uv_default_loop(), &baton->request, searchDo, (uv_after_work_cb)searchAfter);
+    uv_queue_work(uv_default_loop(), &baton->request, searchDo, (uv_after_work_cb) searchAfter);
     
     return Undefined();
 }
