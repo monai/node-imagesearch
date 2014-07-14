@@ -1,9 +1,7 @@
 var search = require('../build/Release/search').search;
 var assert = require('assert');
 
-describe('native addon', function () {
-    // describe('search(imgMatrix, tplMatrix, colorTolerance, pixelTolerance, callback)', function () {
-    
+describe('native addon - arguments validation', function () {
     function testError(regex, img, tpl) {
         assert.throws(function () {
             search(img, tpl);
@@ -245,6 +243,37 @@ describe('native addon', function () {
                 data: [ new Float32Array(0), new Float32Array(0), new Float32Array(0), new Float32Array(1) ],
                 channels: 4
             });
+        });
+    });
+    
+    describe('rest arguments', function () {
+        var img = {
+            rows: 2, cols: 2, channels: 1,
+            data: [ new Float32Array([ 255, 255, 255, 255 ]) ]
+        };
+        
+        var tpl = {
+            rows: 2, cols: 2, channels: 1,
+            data: [ new Float32Array([ 255, 255, 255, 254 ]) ]
+        };
+        
+        it('should default "colorTolerance" to 0 if argument is not integer', function (done) {
+            search(img, tpl, "a", 0, function (error, result) {
+                assert.strictEqual(result.length, 0);
+                done();
+            });
+        });
+        
+        it('should default "pixelTolerance" to 0 if argument is not integer', function (done) {
+            search(img, tpl, 0, "a", function (error, result) {
+                assert.strictEqual(result.length, 0);
+                done();
+            });
+        });
+        
+        it('should not to crash if "callback" is not passed', function (done) {
+            search(img, tpl, 0, 0);
+            setImmediate(done);
         });
     });
 });
