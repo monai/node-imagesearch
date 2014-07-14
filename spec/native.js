@@ -146,7 +146,7 @@ describe('native addon', function () {
     });
     
     describe('"matrix.data" channel buffer length correspondence', function () {
-        it('should throw error if K and A cahnnel length in "imgMatrix" is not equal', function () {
+        it('should throw error if K and A cahnnel length in KA "imgMatrix" is not equal', function () {
             testError(/Bad argument 'imgMatrix.data'/,
                 { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(1) ], channels: 2 },
                 { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1) ], channels: 2 }
@@ -196,7 +196,7 @@ describe('native addon', function () {
             });
         });
         
-        it('should throw error if K and A cahnnel length in "tplMatrix" is not equal', function () {
+        it('should throw error if K and A cahnnel length in KA "tplMatrix" is not equal', function () {
             testError(/Bad argument 'tplMatrix.data'/,
                 { rows: 0, cols: 0, data: [ new Float32Array(1), new Float32Array(1) ], channels: 2 },
                 { rows: 0, cols: 0, data: [ new Float32Array(0), new Float32Array(1) ], channels: 2 }
