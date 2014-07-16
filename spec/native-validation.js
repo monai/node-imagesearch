@@ -124,6 +124,11 @@ describe('native addon - arguments validation', function () {
                 { rows: 0, cols: 0, data: null, channels: 1 },
                 { rows: 0, cols: 0, data: null, channels: 3 }
             );
+            
+            testError(/Channel mismatch/,
+                { rows: 0, cols: 0, data: null, channels: 3 },
+                { rows: 0, cols: 0, data: null, channels: 1 }
+            );
         });
     });
     

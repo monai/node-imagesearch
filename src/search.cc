@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
-#include <string.h>
 
 #include <uv.h>
 #include <node.h>
@@ -53,7 +52,7 @@ Handle<Value> Search(const Arguments& args) {
         return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
     }
     
-    if ((m2Channels - m1Channels) > 1) {
+    if (abs(m2Channels - m1Channels) > 1) {
         return ThrowException(Exception::TypeError(String::New("Channel mismatch")));
     }
     
@@ -172,30 +171,20 @@ Handle<Value> Search(const Arguments& args) {
     }
     
     // validate channel buffer lengths
-    if (m1Channels == 2) {
-        if (m1KL != m1AL) {
-            return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
-        }
-        
-        if (m2KL != m2AL) {
-            return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
-        }
-    } else if (m1Channels == 3) {
-        if (m1RL != m1GL || m1RL != m1BL) {
-            return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
-        }
-        
-        if (m2RL != m2GL || m2RL != m2BL) {
-            return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
-        }
-    } else if (m1Channels == 4) {
-        if (m1RL != m1GL || m1RL != m1BL || m1RL != m1AL) {
-            return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
-        }
-        
-        if (m2RL != m2GL || m2RL != m2BL || m2RL != m2AL) {
-            return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
-        }
+    if (m1Channels == 2 && m1KL != m1AL) {
+        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+    } else if (m1Channels == 3 && (m1RL != m1GL || m1RL != m1BL)) {
+        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+    } else if (m1Channels == 4 && (m1RL != m1GL || m1RL != m1BL || m1RL != m1AL)) {
+        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+    }
+    
+    if (m2Channels == 2 && m2KL != m2AL) {
+        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+    } else if (m2Channels == 3 && (m2RL != m2GL || m2RL != m2BL)) {
+        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+    } else if (m2Channels == 4 && (m2RL != m2GL || m2RL != m2BL || m2RL != m2AL)) {
+        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
     }
     
     Cargo *m1 = new Cargo;
