@@ -234,11 +234,11 @@ describe('native addon - search', function () {
         });
         
         function test(title, data, row, col) {
-            it('K: '+ title, function (done) {
+            it(title +' (K)', function (done) {
                 kTest(data, row, col, done);
             });
             
-            it('RGB: '+ title, function (done) {
+            it(title +' (RGB)', function (done) {
                 rgbTest(data, row, col, done);
             });
         }
@@ -338,11 +338,11 @@ describe('native addon - search', function () {
         });
         
         function test(title, data, row, col) {
-            it('K: '+ title, function (done) {
+            it(title +' (K)', function (done) {
                 kTest(data, row, col, done);
             });
             
-            it('RGB: '+ title, function (done) {
+            it(title +' (RGB)', function (done) {
                 rgbTest(data, row, col, done);
             });
         }
