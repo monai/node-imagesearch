@@ -419,4 +419,120 @@ describe('native addon - search', function () {
             255, 255, 255, 200, 200, 200
         ], 3, 3);
     });
+    
+    describe('fuzzy search', function () {
+        it('should respect color tolerance on all pixels (K)', function (done) {
+            search({
+                rows: 2, cols: 2, channels: 1,
+                data: [
+                    new Float32Array([ 255, 255, 255, 255 ])
+                ]
+            }, {
+                rows: 2, cols: 2, channels: 1,
+                data: [
+                    new Float32Array([ 254, 254, 254, 254 ])
+                ]
+            }, 1, 0, function (error, result) {
+                assert.strictEqual(result.length, 1);
+                done();
+            });
+        });
+        
+        it('should respect color tolerance on all pixels and all channels (RGB)', function (done) {
+            search({
+                rows: 2, cols: 2, channels: 3,
+                data: [
+                    new Float32Array([ 255, 255, 255, 255 ]),
+                    new Float32Array([ 255, 255, 255, 255 ]),
+                    new Float32Array([ 255, 255, 255, 255 ])
+                ]
+            }, {
+                rows: 2, cols: 2, channels: 3,
+                data: [
+                    new Float32Array([ 254, 254, 254, 254 ]),
+                    new Float32Array([ 254, 254, 254, 254 ]),
+                    new Float32Array([ 254, 254, 254, 254 ])
+                ]
+            }, 12, 0, function (error, result) {
+                assert.strictEqual(result.length, 1);
+                done();
+            });
+        });
+        
+        it('should respect pixel tolerance on all pixels (K)', function (done) {
+            search({
+                rows: 2, cols: 2, channels: 1,
+                data: [
+                    new Float32Array([ 255, 255, 255, 255 ])
+                ]
+            }, {
+                rows: 2, cols: 2, channels: 1,
+                data: [
+                    new Float32Array([ 254, 254, 254, 254 ])
+                ]
+            }, 0, 4, function (error, result) {
+                assert.strictEqual(result.length, 1);
+                done();
+            });
+        });
+        
+        it('should respect pixel tolerance on all pixels and all channels (RGB)', function (done) {
+            search({
+                rows: 2, cols: 2, channels: 3,
+                data: [
+                    new Float32Array([ 255, 255, 255, 255 ]),
+                    new Float32Array([ 255, 255, 255, 255 ]),
+                    new Float32Array([ 255, 255, 255, 255 ])
+                ]
+            }, {
+                rows: 2, cols: 2, channels: 3,
+                data: [
+                    new Float32Array([ 254, 254, 254, 254 ]),
+                    new Float32Array([ 254, 254, 254, 254 ]),
+                    new Float32Array([ 254, 254, 254, 254 ])
+                ]
+            }, 0, 4, function (error, result) {
+                assert.strictEqual(result.length, 1);
+                done();
+            });
+        });
+        
+        it('should respect pixel tolerance and color tolerance on all pixels (K)', function (done) {
+            search({
+                rows: 2, cols: 2, channels: 1,
+                data: [
+                    new Float32Array([ 255, 255, 255, 255 ])
+                ]
+            }, {
+                rows: 2, cols: 2, channels: 1,
+                data: [
+                    new Float32Array([ 254, 253, 253, 253 ])
+                ]
+            }, 1, 3, function (error, result) {
+                assert.strictEqual(result.length, 1);
+                done();
+            });
+        });
+        
+        it('should respect pixel tolerance and color tolerance on all pixels and all channels (K)', function (done) {
+            search({
+                rows: 2, cols: 2, channels: 3,
+                data: [
+                    new Float32Array([ 255, 255, 255, 255 ]),
+                    new Float32Array([ 255, 255, 255, 255 ]),
+                    new Float32Array([ 255, 255, 255, 255 ])
+                ]
+            }, {
+                rows: 2, cols: 2, channels: 3,
+                data: [
+                    new Float32Array([ 254, 255, 255, 255 ]),
+                    new Float32Array([ 255, 253, 255, 255 ]),
+                    new Float32Array([ 255, 255, 253, 253 ])
+                ]
+            }, 1, 3, function (error, result) {
+                assert.strictEqual(result.length, 1);
+                done();
+            });
+        });
+    });
 });
