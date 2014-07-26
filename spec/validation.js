@@ -1,7 +1,7 @@
 var search = require('../build/Release/search').search;
 var assert = require('assert');
 
-describe('native addon - arguments validation', function () {
+describe('arguments validation', function () {
     function testError(regex, img, tpl) {
         assert.throws(function () {
             search(img, tpl);

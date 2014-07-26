@@ -1,7 +1,7 @@
 var search = require('../build/Release/search').search;
 var assert = require('assert');
 
-describe('native addon - search', function () {
+describe('search', function () {
     function makeKTest(img, tpl) {
         return function (data, row, col, done) {
             search({

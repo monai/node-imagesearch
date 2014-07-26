@@ -3,7 +3,7 @@ var assert = require('assert');
 var async = require('async');
 var pngparse = require('pngparse');
 
-describe('native addon - search', function () {
+describe('real world search', function () {
     function readImage(filename) {
         return function (callback) {
             pngparse.parseFile(filename, callback);
