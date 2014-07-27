@@ -22,7 +22,7 @@ pngparse.parseFile('image.png', function (error, image) {
 ```
 ## Usage
 
-**imagesearch(image, template, [options], callback)**
+**imagesearch(image, template, [options], callback);**
 
 ### image and template
 
