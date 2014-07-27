@@ -75,7 +75,7 @@ Image pixel comparison requires a lot steps of algebraic computation which turns
 
 ## Contribution
 
-Various contribution and pull requests are welcome. Especially welcome is addon code review and improvement from experienced C++ developers.
+Various contributions and pull requests are welcome. Especially welcome is addon code review and improvement from experienced C++ developers.
 
 ## License
 
