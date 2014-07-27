@@ -27,6 +27,20 @@ describe('imagesearch(image, template, options, callback)', function () {
         });
     }
     
+    function makeResultTest(image, template, result, callback) {
+        var imagesearch = createImagesearch({
+            '../build/Release/search': {
+                search: function () {
+                    arguments[4](null, result);
+                }
+            }
+        });
+        
+        imagesearch(image, template, function (error, result) {
+            callback(result);
+        });
+    }
+    
     function testError(message, image, template, callback) {
         imagesearch(image, template, function (error, result) {
             
@@ -186,6 +200,59 @@ describe('imagesearch(image, template, options, callback)', function () {
     it('should return error if number of calculated "template.channels" does not correspond data length', function (done) {
         var image = { width: 1, height: 1, channels: 1, data: { length: 1 } };
         testError(/Bad template dimensions/, image, { data: { length: 13 }, width: 2, height: 2, channels: 3 }, done);
+    });
+    
+    //--
+    
+    it('should focus overlaping results and return the most accurate', function (done) {
+        var image = { width: 4, height: 4, channels: 1, data: { length: 16 } };
+        var template = { width: 2, height: 2, channels: 1, data: { length: 4 } };
+        var result = [
+            { row: 0, col: 0, accuracy: 2 },
+            { row: 0, col: 2, accuracy: 1 },
+            { row: 1, col: 1, accuracy: 0 },
+            { row: 2, col: 0, accuracy: 1 },
+            { row: 2, col: 2, accuracy: 2 }
+        ];
+        var expected = [{ x: 1, y: 1, accuracy: 0 }];
+        
+        makeResultTest(image, template, result, function (result) {
+            assert.deepEqual(result, expected);
+            done();
+        });
+    });
+    
+    it('should return result array of objects with keys: "x", "y", and "accuracy"', function (done) {
+        var image = { width: 1, height: 1, channels: 1, data: { length: 1 } };
+        var result = [{ row: 0, col: 0, accuracy: 123.456789 }];
+        var expected = [{ x: 0, y: 0, accuracy: 123.456789 }];
+        
+        makeResultTest(image, image, result, function (result) {
+            assert.deepEqual(result, expected);
+            done();
+        });
+    });
+    
+    it('should return result array sorted by "accuracy" descending', function (done) {
+        var image = { width: 2, height: 2, channels: 1, data: { length: 4 } };
+        var template = { width: 1, height: 1, channels: 1, data: { length: 1 } };
+        
+        var result = [
+            { row: 0, col: 0, accuracy: 2 },
+            { row: 1, col: 1, accuracy: 1 },
+            { row: 0, col: 1, accuracy: 3 }
+        ];
+        
+        var expected = [
+            { x: 1, y: 1, accuracy: 1 },
+            { x: 0, y: 0, accuracy: 2 },
+            { x: 1, y: 0, accuracy: 3 }
+        ];
+        
+        makeResultTest(image, template, result, function (result) {
+            assert.deepEqual(result, expected);
+            done();
+        })
     });
     
 });
