@@ -256,4 +256,3 @@ describe('imagesearch(image, template, options, callback)', function () {
     });
     
 });
-
