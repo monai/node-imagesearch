@@ -71,7 +71,7 @@ Example:
 
 ## Under the hood
 
-Image pixel comparison requires a lot steps of algebraic computation which turns into big loops with few small numbers operations in each step. JavaScript doesn't have native SIMD support, although theres signs of promising [initiatives](https://01.org/blogs/tlcounts/2014/bringing-simd-javascript) and situation eventually can be changed. As yet there's no other way to speed things  as to use native bindings to some algebra library that supports vectorization. Since image data can be expressed as matrix, [Eigen](http://eigen.tuxfamily.org/) C++ template library is used in this project.
+Image pixel comparison requires a lot steps of algebraic computation which turns into big loops with few small numbers operations in each step. JavaScript doesn't have native SIMD support, although there are signs of promising [initiatives](https://01.org/blogs/tlcounts/2014/bringing-simd-javascript) and situation eventually can be changed. Of yet there's no other way to speed things up as to use native bindings to some algebra library that supports vectorization. Since image data can be expressed as matrix, [Eigen](http://eigen.tuxfamily.org/) C++ template library is used in this project.
 
 ## Contribution
 
