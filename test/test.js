@@ -3,8 +3,8 @@ var pngparse = require('pngparse');
 var imagesearch = require('../lib/imagesearch.js');
 
 async.series([
-    readImage('./test/glider.png'),
-    readImage('./test/glider-dot.png'),
+    readImage('./test/img.png'),
+    readImage('./test/tpl.png'),
 ], function (error, images) {
     doTest(images);
 });
@@ -12,6 +12,8 @@ async.series([
 function doTest(images) {
     var image = images[0];
     var template = images[1];
+    
+    console.log(image);
     
     
     imagesearch(image, template, { }, function (error, result) {
