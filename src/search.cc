@@ -52,7 +52,7 @@ Handle<Value> Search(const Arguments& args) {
         return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
     }
     
-    if (abs(m2Channels - m1Channels) > 1) {
+    if (abs((int) m2Channels - (int) m1Channels) > 1) {
         return ThrowException(Exception::TypeError(String::New("Channel mismatch")));
     }
     
@@ -108,9 +108,15 @@ Handle<Value> Search(const Arguments& args) {
     char *m1KD, *m1RD, *m1GD, *m1BD, *m1AD;
     float *m1KDi, *m1RDi, *m1GDi, *m1BDi, *m1ADi;
     
+    m1KL = m1RL = m1GL = m1BL = m1AL = 0;
+    m1KDi = m1RDi = m1GDi = m1BDi = m1ADi = 0;
+    
     size_t m2KL, m2RL, m2GL, m2BL, m2AL;
     char *m2KD, *m2RD, *m2GD, *m2BD, *m2AD;
     float *m2KDi, *m2RDi, *m2GDi, *m2BDi, *m2ADi;
+    
+    m2KL = m2RL = m2GL = m2BL = m2AL = 0;
+    m2KDi = m2RDi = m2GDi = m2BDi = m2ADi = 0;
     
     if (m2Channels == 1 || m2Channels == 2) {
         m1KL = node::Buffer::Length(m1K) * sizeof(float);
@@ -336,7 +342,7 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
     do {
         do {
             stubDiff = (stubM1.block(r, c, m2.rows, 1) - stub).array().abs();
-            pixelMiss = (unsigned int) (stubDiff > colorTolerance).count();
+            pixelMiss = (unsigned int) (stubDiff > (float) colorTolerance).count();
             if (pixelMiss > pixelTolerance) continue;
             
             if (m1.channels < 3) {
@@ -347,7 +353,7 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
                 matDiff += (m1.b.block(r, c - dx, m2.rows, m2.cols) - m2.b).array().abs();
             }
             
-            pixelMiss = (unsigned int) (matDiff > colorTolerance).count();
+            pixelMiss = (unsigned int) (matDiff > (float) colorTolerance).count();
             
             if (pixelMiss <= pixelTolerance) {
                 accuracy = matDiff.maxCoeff();
@@ -368,8 +374,8 @@ std::vector<Match> search(Matrix &m1, Matrix &m2, unsigned int colorTolerance, u
 }
 
 Eigen::RowVectorXf stdDev(MatrixChannel &m) {
-    const unsigned int N = m.rows();
-    return ((m.rowwise() - (m.colwise().sum() / N)).array().square().colwise().sum() / N).array().sqrt();
+    const unsigned int N = (unsigned int) m.rows();
+    return ((m.rowwise() - (m.colwise().sum() / (float) N)).array().square().colwise().sum() / (float) N).array().sqrt();
 }
 
 void Init(Handle<Object> exports) {
