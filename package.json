@@ -1,5 +1,5 @@
 {
-  "name": "node-imagesearch",
+  "name": "imagesearch",
   "version": "0.0.2",
   "description": "Fuzzy search for subimage within image",
   "main": "index.js",
