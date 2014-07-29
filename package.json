@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:monai/node-imagesearch.git"
+    "url": "git@github.com:monai/node-imagesearch.git"
   },
   "keywords": [
     "image",
