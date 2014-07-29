@@ -1,5 +1,8 @@
 # node-imagesearch
 
+[![Build Status](http://img.shields.io/travis/monai/node-imagesearch/develop.svg)](https://travis-ci.org/monai/node-imagesearch)
+[![NPM Version](http://img.shields.io/npm/v/imagesearch.svg)](https://www.npmjs.org/package/imagesearch)
+
 Fuzzy search for subimage within image. Tolerates color drift and bad pixels.
 
 ## Installation
