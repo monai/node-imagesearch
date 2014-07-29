@@ -1,6 +1,6 @@
 {
   "name": "imagesearch",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Fuzzy search for subimage within image",
   "main": "index.js",
   "devDependencies": {
