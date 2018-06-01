@@ -7,19 +7,21 @@
 #include <node_buffer.h>
 
 #include <Eigen/Dense>
+#include <nan.h>
 
 #include "search.h"
 
 using namespace v8;
 
-Handle<Value> Search(const Arguments& args) {
-    HandleScope scope;
-    
-    Local<String> rows = String::New("rows");
-    Local<String> cols = String::New("cols");
-    Local<String> data = String::New("data");
-    Local<String> channels = String::New("channels");
-    
+void Search(const Nan::FunctionCallbackInfo<v8::Value> &args) {
+    v8::Isolate *isolate = args.GetIsolate();
+    v8::HandleScope scope(isolate);
+
+    Local<String> rows = Nan::New("rows").ToLocalChecked();
+    Local<String> cols = Nan::New("cols").ToLocalChecked();
+    Local<String> data = Nan::New("data").ToLocalChecked();
+    Local<String> channels = Nan::New("channels").ToLocalChecked();
+
     // unwrap arguments
     Handle<Object> matrix1 = Handle<Object>::Cast(args[0]);
     Handle<Object> matrix2 = Handle<Object>::Cast(args[1]);
@@ -27,20 +29,26 @@ Handle<Value> Search(const Arguments& args) {
     const unsigned int colorTolerance = args[2]->IsNumber() ? args[2]->Int32Value() : 0;
     const unsigned int pixelTolerance = args[3]->IsNumber() ? args[3]->Int32Value() : 0;
     
-    Persistent<Function> callback = Persistent<Function>::New(Local<Function>::Cast(args[4]));
+    //Local<Function> localCallback = Local<Function>::Cast(args[4]);
+    //Persistent<Function> callback = Persistent<Function>::New(isolate, localCallback);
+    v8::Persistent<v8::Function> callback;
+    callback.Reset(isolate, Local<Function>::Cast(args[4]));
     
     // check for required matrix properties
     if ( ! matrix1->Has(rows) || ! matrix1->Has(cols) || ! matrix1->Has(channels) || ! matrix1->Has(data)) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
+        Nan::ThrowTypeError("Bad argument 'imgMatrix'");
+        //return ThrowException(Exception::TypeError(Nan::New("Bad argument 'imgMatrix'").ToLocalChecked));
     }
     
     if ( ! matrix2->Has(rows) || ! matrix2->Has(cols) || ! matrix2->Has(channels) || ! matrix2->Has(data)) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
+        Nan::ThrowTypeError("Bad argument 'tplMatrix'");
+        //return ThrowException(Exception::TypeError(Nan::New("Bad argument 'tplMatrix'")));
     }
     
     // unwrap matrices
     const unsigned int m1Rows = matrix1->Get(rows)->Uint32Value();
     const unsigned int m1Cols = matrix1->Get(cols)->Uint32Value();
+    //MaybeLocal<Uint32> m1Channels = Nan::ToArrayIndex(Nan::Get(matrix1, channels).ToLocalChecked());
     const unsigned int m1Channels = matrix1->Get(channels)->Uint32Value();
     
     const unsigned int m2Rows = matrix2->Get(rows)->Uint32Value();
@@ -49,11 +57,13 @@ Handle<Value> Search(const Arguments& args) {
     
     // channel count validation
     if (m1Channels < 1 || m2Channels < 1 || m1Channels > 4 || m2Channels > 4) {
-        return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
+        Nan::ThrowTypeError("Bad number of channels");
+        //return ThrowException(Exception::TypeError(String::New("Bad number of channels")));
     }
     
     if (abs((int) m2Channels - (int) m1Channels) > 1) {
-        return ThrowException(Exception::TypeError(String::New("Channel mismatch")));
+        Nan::ThrowTypeError("Channel mismatch");
+        //return ThrowException(Exception::TypeError(String::New("Channel mismatch")));
     }
     
     // unwrap matrix.data
@@ -62,12 +72,14 @@ Handle<Value> Search(const Arguments& args) {
     
     // TODO: consider removal of channels property
     // declared and actual channel count validation
-    if (m1Channels != m1Data->Get(String::New("length"))->Uint32Value()) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
+    if (m1Channels != m1Data->Get(Nan::New("length").ToLocalChecked())->Uint32Value()) {
+        Nan::ThrowTypeError("Bad argument 'imgMatrix'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix'")));
     }
     
-    if (m2Channels != m2Data->Get(String::New("length"))->Uint32Value()) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
+    if (m2Channels != m2Data->Get(Nan::New("length").ToLocalChecked())->Uint32Value()) {
+        Nan::ThrowTypeError("Bad argument 'tplMatrix'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix'")));
     }
     
     // unwrap matrix.data channels
@@ -178,19 +190,25 @@ Handle<Value> Search(const Arguments& args) {
     
     // validate channel buffer lengths
     if (m1Channels == 2 && m1KL != m1AL) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+        Nan::ThrowTypeError("Bad argument 'imgMatrix.data'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
     } else if (m1Channels == 3 && (m1RL != m1GL || m1RL != m1BL)) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+        Nan::ThrowTypeError("Bad argument 'imgMatrix.data'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
     } else if (m1Channels == 4 && (m1RL != m1GL || m1RL != m1BL || m1RL != m1AL)) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
+        Nan::ThrowTypeError("Bad argument 'imgMatrix.data'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'imgMatrix.data'")));
     }
     
     if (m2Channels == 2 && m2KL != m2AL) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+        Nan::ThrowTypeError("Bad argument 'tplMatrix.data'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
     } else if (m2Channels == 3 && (m2RL != m2GL || m2RL != m2BL)) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+        Nan::ThrowTypeError("Bad argument 'tplMatrix.data'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
     } else if (m2Channels == 4 && (m2RL != m2GL || m2RL != m2BL || m2RL != m2AL)) {
-        return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
+        Nan::ThrowTypeError("Bad argument 'tplMatrix.data'");
+        //return ThrowException(Exception::TypeError(String::New("Bad argument 'tplMatrix.data'")));
     }
     
     Cargo *m1 = new Cargo;
@@ -215,7 +233,7 @@ Handle<Value> Search(const Arguments& args) {
     
     AsyncBaton *baton = new AsyncBaton;
     baton->request.data = baton;
-    baton->callback = callback;
+    baton->callback.Reset(isolate, callback);
     baton->m1 = m1;
     baton->m2 = m2;
     baton->colorTolerance = colorTolerance;
@@ -223,7 +241,7 @@ Handle<Value> Search(const Arguments& args) {
     
     uv_queue_work(uv_default_loop(), &baton->request, searchDo, (uv_after_work_cb) searchAfter);
     
-    return Undefined();
+    //return Nan::Undefined();
 }
 
 void searchDo(uv_work_t *request) {
@@ -258,27 +276,29 @@ void searchDo(uv_work_t *request) {
 }
 
 void searchAfter(uv_work_t *request) {
+    v8::Isolate *isolate = Isolate::GetCurrent();
     AsyncBaton *baton = static_cast<AsyncBaton*>(request->data);
     
-    Local<Array> out = Array::New((int) baton->result.size());
+    Local<Array> out = Array::New(isolate, baton->result.size());
     Local<Object> match;
     
-    Local<String> row = String::New("row");
-    Local<String> col = String::New("col");
-    Local<String> accuracy = String::New("accuracy");
+    Local<String> row = Nan::New("row").ToLocalChecked();
+    Local<String> col = Nan::New("col").ToLocalChecked();
+    Local<String> accuracy = Nan::New("accuracy").ToLocalChecked();
     
     int i = 0;
     for (std::vector<Match>::iterator it = baton->result.begin(); it != baton->result.end(); it++) {
-        match = Object::New();
-        match->Set(row, Number::New(it->row));
-        match->Set(col, Number::New(it->col));
-        match->Set(accuracy, Number::New(it->accuracy));
+        match = Object::New(isolate);
+        match->Set(row, Number::New(isolate, it->row));
+        match->Set(col, Number::New(isolate, it->col));
+        match->Set(accuracy, Number::New(isolate, it->accuracy));
         
         out->Set(i++, match);
     }
     
-    Handle<Value> argv[] = { Null(), out };
-    baton->callback->Call(Context::GetCurrent()->Global(), 2, argv);
+    Handle<Value> argv[] = { Nan::Null(), out };
+    Local<Function> callback = Local<Function>::New(isolate, baton->callback);
+    callback->Call(Nan::GetCurrentContext()->Global(), 2, argv);
     
     delete baton;
     baton = NULL;
@@ -378,8 +398,12 @@ Eigen::RowVectorXf stdDev(MatrixChannel &m) {
     return ((m.rowwise() - (m.colwise().sum() / (float) N)).array().square().colwise().sum() / (float) N).array().sqrt();
 }
 
-void Init(Handle<Object> exports) {
-    exports->Set(String::NewSymbol("search"), FunctionTemplate::New(Search)->GetFunction());
+void Init(v8::Local<v8::Object> exports) {
+    //Isolate *isolate = Isolate::GetCurrent();
+    //exports->Set(Nan::New("search"), FunctionTemplate::New(isolate, Search)->GetFunction());
+    //v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(Search);
+    //Nan::Set(exports, Nan::New("Search").ToLocalChecked(), tpl->GetFunction());
+    exports->Set(Nan::New("search").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Search)->GetFunction());
 }
 
 NODE_MODULE(search, Init)

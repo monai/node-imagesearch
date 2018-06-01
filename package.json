@@ -26,6 +26,7 @@
   "license": "ISC",
   "gypfile": true,
   "dependencies": {
-    "bindings": "^1.2.1"
+    "bindings": "^1.2.1",
+    "nan": "^2.10.0"
   }
 }
